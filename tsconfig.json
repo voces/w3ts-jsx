@@ -1,0 +1,31 @@
+{
+	"compilerOptions": {
+		"alwaysStrict": true,
+		"declaration": false,
+		"forceConsistentCasingInFileNames": true,
+		"jsx": "react",
+		"lib": ["ESNext", "DOM"],
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"noImplicitAny": true,
+		"noImplicitThis": true,
+		"outDir": "./dist/",
+		"skipLibCheck": true,
+		"strictNullChecks": true,
+		"target": "ESNext",
+		"typeRoots": ["lua-types/5.3"],
+		"types": [
+			"@types/jest",
+			"@types/node",
+			"lua-types/5.3",
+			"war3-types/core/compat",
+			"war3-types/core/common",
+			"war3-types/core/blizzard",
+			"war3-types/core/commonai",
+			"war3-types/core/polyfill",
+			"war3-types/special/w3ts"
+		]
+	},
+	"include": ["src"],
+	"exclude": ["node_modules", "__lua__"]
+}

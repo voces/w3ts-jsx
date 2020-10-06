@@ -1,0 +1,16 @@
+{
+	"extends": "../../../../tsconfig.json",
+	"tstl": {
+        "noHeader": true,
+		"luaLibImport": "require",
+		"noImplicitSelf": true,
+        "luaTarget": "5.3",
+        "luaBundle": "__lua__/bundle.lua",
+		"luaBundleEntry": "../src/test/sample.tsx",
+		"luaPlugins": [
+			{ "name": "../index", "import": "JsxTransformer" }
+        ]
+    },
+    "include": ["../../.."],
+    "exclude": ["__lua__"]
+}

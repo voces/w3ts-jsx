@@ -1,0 +1,48 @@
+{
+  "name": "w3ts-jsx",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Robert Coe",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "prepublishOnly": "npm run build",
+    "test-lint": "eslint src --ext .js,.ts,.tsx",
+    "test": "jest"
+  },
+  "peerDependencies": {
+    "typescript": "^3.9.7",
+    "typescript-to-lua": "^0.35.0",
+    "w3ts": "^2.1.2"
+  },
+  "dependencies": {
+    "basic-pragma": "^1.0.1",
+    "tstl-jsx": "^1.0.1"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.11.5",
+    "@babel/preset-typescript": "^7.10.4",
+    "@types/jest": "^26.0.14",
+    "@typescript-eslint/eslint-plugin": "^4.3.0",
+    "eslint": "^7.10.0",
+    "eslint-config-verit": "^3.2.1",
+    "eslint-plugin-prettier": "^3.1.4",
+    "jest": "^26.4.2",
+    "lua-types": "^2.8.0",
+    "prettier": "^2.1.2",
+    "ts-jest": "^26.4.1",
+    "ts-node": "^9.0.0",
+    "typescript": "^3.9.7",
+    "typescript-to-lua": "^0.35.0",
+    "war3-types": "^1.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voces/w3ts-jsx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/voces/w3ts-jsx/issues"
+  },
+  "homepage": "https://github.com/voces/w3ts-jsx#readme"
+}
