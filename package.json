@@ -1,8 +1,8 @@
 {
   "name": "w3ts-jsx",
   "version": "1.0.0",
-  "description": "",
-  "author": "Robert Coe",
+  "description": "JSX for Warcraft III maps",
+  "author": "verit",
   "license": "ISC",
   "main": "dist/index.js",
   "scripts": {
