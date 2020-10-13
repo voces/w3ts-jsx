@@ -21,7 +21,7 @@ local function require(file)
     end
 end
 ____modules = {
-[\\".src.lualib_bundle\\"] = function() function __TS__ArrayConcat(arr1, ...)
+[\\"lualib_bundle\\"] = function() function __TS__ArrayConcat(arr1, ...)
     local args = {...}
     local out = {}
     for ____, val in ipairs(arr1) do
@@ -1618,22 +1618,146 @@ function __TS__TypeOf(value)
 end
 
 end,
-[\\".src.src.adapter\\"] = function() require(\\"lualib_bundle\\");
+[\\"src.basic-pragma.adapter\\"] = function() local ____exports = {}
+local baseCreateFrame
+baseCreateFrame = function()
+    error(\\"Adapter has not implemented createFrame\\", 0)
+end
+local baseCleanupFrame
+baseCleanupFrame = function()
+    error(\\"Adapter has not implemented cleanupFrame\\", 0)
+end
+local baseUpdateFrameProperties
+baseUpdateFrameProperties = function()
+    error(\\"Adapter has not implemented updateFrameProperties\\", 0)
+end
+local baseGetParent
+baseGetParent = function()
+    error(\\"Adapter has not implemented getParent\\", 0)
+end
+local internalAdapter = {createFrame = baseCreateFrame, cleanupFrame = baseCleanupFrame, updateFrameProperties = baseUpdateFrameProperties, getParent = baseGetParent}
+____exports.adapter = internalAdapter
+____exports.setAdapter = function(adapter)
+    internalAdapter.createFrame = adapter.createFrame or baseCreateFrame
+    internalAdapter.cleanupFrame = adapter.cleanupFrame or baseCleanupFrame
+    internalAdapter.getParent = adapter.getParent or baseGetParent
+    internalAdapter.updateFrameProperties = adapter.updateFrameProperties or baseUpdateFrameProperties
+end
+return ____exports
+end,
+[\\"src.adapter\\"] = function() require(\\"lualib_bundle\\");
 local ____exports = {}
-local frameDefaults = {name = \\"\\", priority = 0, isSimple = true, alpha = 255, enabled = true, font = {fileName = \\"\\", height = 16, flags = 0}, level = 0, maxLength = 9999, minMaxValue = {min = -999999999, max = 999999999}, model = {modelFile = \\"\\", cameraIndex = 0}, scale = 1, spriteAnimate = {primaryProp = 0, flags = 0}, stepSize = 0, text = \\"\\", textAlignment = {vert = TEXT_JUSTIFY_TOP, horz = TEXT_JUSTIFY_LEFT}, textColor = 16777215, texture = {texFile = \\"\\", flag = 0, blend = false}, tooltip = nil, value = 0, vertexColor = 16777215, visible = true, position = nil, absPosition = nil}
-local context = 0
+local frameDefaults = {name = \\"AnonymousFrame\\", priority = 0, isSimple = true, typeName = nil, inherits = \\"\\", context = 0, key = nil, alpha = 255, enabled = true, font = {fileName = \\"\\", height = 16, flags = 0}, level = 0, maxLength = 9999, minMaxValue = {min = -999999999, max = 999999999}, model = {modelFile = \\"\\", cameraIndex = 0}, scale = 1, spriteAnimate = {primaryProp = 0, flags = 0}, stepSize = 0, text = \\"\\", textAlignment = {vert = TEXT_JUSTIFY_TOP, horz = TEXT_JUSTIFY_LEFT}, textColor = 16777215, texture = {texFile = \\"\\", flag = 0, blend = true}, tooltip = nil, value = 0, vertexColor = 16777215, visible = true, position = nil, absPosition = nil, size = {width = 0.1, height = 0.1}, children = nil, onClick = nil, onMouseEnter = nil, onMouseLeave = nil, onMouseUp = nil, onMouseDown = nil, onMouseWheel = nil, onCheckboxChecked = nil, onCheckboxUnchecked = nil, onEditboxTextChanged = nil, onPopupmenuItemChanged = nil, onDoubleClick = nil, onSpriteAnimUpdate = nil, onSliderChanged = nil, onDialogCancel = nil, onDialogAccept = nil, onEditboxEnter = nil}
 local absurd
 absurd = function(value)
     error(
-        __TS__New(
-            Error,
-            (\\"Got \\" .. tostring(value)) .. \\" when expected nothing\\"
-        ),
+        (\\"Got \\" .. tostring(value)) .. \\" when expected nothing\\",
         0
     )
 end
+local triggerMap = __TS__New(WeakMap)
+local conditionMap = __TS__New(WeakMap)
+local setEventProp
+setEventProp = function(frame, event, val, oldValue)
+    local t = triggerMap:get(oldValue)
+    if val == nil then
+        if t then
+            DestroyTrigger(t)
+            triggerMap:delete(oldValue)
+        end
+        return
+    end
+    if t == nil then
+        t = CreateTrigger()
+        BlzTriggerRegisterFrameEvent(t, frame, event)
+    else
+        local condition = conditionMap:get(oldValue)
+        if condition then
+            TriggerRemoveCondition(t, condition)
+            conditionMap:delete(oldValue)
+        end
+    end
+    local condition = TriggerAddCondition(
+        t,
+        Condition(
+            function()
+                if event == FRAMEEVENT_CONTROL_CLICK then
+                    BlzFrameSetEnable(frame, false)
+                    BlzFrameSetEnable(frame, true)
+                end
+                val()
+                return false
+            end
+        )
+    )
+    conditionMap:set(val, condition)
+    triggerMap:set(val, t)
+end
+local resolveRelative
+resolveRelative = function(frame, relative)
+    if type(relative) ~= \\"string\\" then
+        return relative
+    end
+    local ____switch13 = relative
+    if ____switch13 == \\"parent\\" then
+        goto ____switch13_case_0
+    elseif ____switch13 == \\"previous\\" then
+        goto ____switch13_case_1
+    end
+    goto ____switch13_case_default
+    ::____switch13_case_0::
+    do
+        return BlzFrameGetParent(frame)
+    end
+    ::____switch13_case_1::
+    do
+        do
+            local parent = BlzFrameGetParent(frame)
+            local children = BlzFrameGetChildrenCount(parent)
+            local index = -1
+            do
+                local i = 0
+                while i < children do
+                    if BlzFrameGetChild(parent, i) == frame then
+                        index = i
+                        break
+                    end
+                    i = i + 1
+                end
+            end
+            if index > 0 then
+                return BlzFrameGetChild(parent, index - 1)
+            end
+            return nil
+        end
+    end
+    ::____switch13_case_default::
+    do
+        absurd(relative)
+    end
+    ::____switch13_end::
+end
+local previousToParentPoint
+previousToParentPoint = function(relative)
+    local ____switch19 = relative
+    if ____switch19 == FRAMEPOINT_RIGHT then
+        goto ____switch19_case_0
+    elseif ____switch19 == FRAMEPOINT_BOTTOM then
+        goto ____switch19_case_1
+    end
+    goto ____switch19_end
+    ::____switch19_case_0::
+    do
+        return FRAMEPOINT_LEFT
+    end
+    ::____switch19_case_1::
+    do
+        return FRAMEPOINT_TOP
+    end
+    ::____switch19_end::
+end
 local setProp
-setProp = function(frame, prop, value)
+setProp = function(frame, prop, value, oldValue)
     local val = (function(____lhs)
         if ____lhs == nil then
             return frameDefaults[prop]
@@ -1641,77 +1765,122 @@ setProp = function(frame, prop, value)
             return ____lhs
         end
     end)(value)
-    local ____switch4 = prop
-    if ____switch4 == \\"text\\" then
-        goto ____switch4_case_0
-    elseif ____switch4 == \\"maxLength\\" then
-        goto ____switch4_case_1
-    elseif ____switch4 == \\"textColor\\" then
-        goto ____switch4_case_2
-    elseif ____switch4 == \\"texture\\" then
-        goto ____switch4_case_3
-    elseif ____switch4 == \\"model\\" then
-        goto ____switch4_case_4
-    elseif ____switch4 == \\"alpha\\" then
-        goto ____switch4_case_5
-    elseif ____switch4 == \\"level\\" then
-        goto ____switch4_case_6
-    elseif ____switch4 == \\"visible\\" then
-        goto ____switch4_case_7
-    elseif ____switch4 == \\"enabled\\" then
-        goto ____switch4_case_8
-    elseif ____switch4 == \\"vertexColor\\" then
-        goto ____switch4_case_9
-    elseif ____switch4 == \\"value\\" then
-        goto ____switch4_case_10
-    elseif ____switch4 == \\"stepSize\\" then
-        goto ____switch4_case_11
-    elseif ____switch4 == \\"tooltip\\" then
-        goto ____switch4_case_12
-    elseif ____switch4 == \\"font\\" then
-        goto ____switch4_case_13
-    elseif ____switch4 == \\"minMaxValue\\" then
-        goto ____switch4_case_14
-    elseif ____switch4 == \\"scale\\" then
-        goto ____switch4_case_15
-    elseif ____switch4 == \\"spriteAnimate\\" then
-        goto ____switch4_case_16
-    elseif ____switch4 == \\"textAlignment\\" then
-        goto ____switch4_case_17
-    elseif ____switch4 == \\"position\\" then
-        goto ____switch4_case_18
-    elseif ____switch4 == \\"absPosition\\" then
-        goto ____switch4_case_19
-    elseif ____switch4 == \\"name\\" then
-        goto ____switch4_case_20
-    elseif ____switch4 == \\"priority\\" then
-        goto ____switch4_case_21
-    elseif ____switch4 == \\"isSimple\\" then
-        goto ____switch4_case_22
+    local _oldValue = oldValue
+    local ____switch21 = prop
+    if ____switch21 == \\"text\\" then
+        goto ____switch21_case_0
+    elseif ____switch21 == \\"maxLength\\" then
+        goto ____switch21_case_1
+    elseif ____switch21 == \\"textColor\\" then
+        goto ____switch21_case_2
+    elseif ____switch21 == \\"texture\\" then
+        goto ____switch21_case_3
+    elseif ____switch21 == \\"model\\" then
+        goto ____switch21_case_4
+    elseif ____switch21 == \\"alpha\\" then
+        goto ____switch21_case_5
+    elseif ____switch21 == \\"level\\" then
+        goto ____switch21_case_6
+    elseif ____switch21 == \\"visible\\" then
+        goto ____switch21_case_7
+    elseif ____switch21 == \\"enabled\\" then
+        goto ____switch21_case_8
+    elseif ____switch21 == \\"vertexColor\\" then
+        goto ____switch21_case_9
+    elseif ____switch21 == \\"value\\" then
+        goto ____switch21_case_10
+    elseif ____switch21 == \\"size\\" then
+        goto ____switch21_case_11
+    elseif ____switch21 == \\"stepSize\\" then
+        goto ____switch21_case_12
+    elseif ____switch21 == \\"tooltip\\" then
+        goto ____switch21_case_13
+    elseif ____switch21 == \\"font\\" then
+        goto ____switch21_case_14
+    elseif ____switch21 == \\"minMaxValue\\" then
+        goto ____switch21_case_15
+    elseif ____switch21 == \\"scale\\" then
+        goto ____switch21_case_16
+    elseif ____switch21 == \\"spriteAnimate\\" then
+        goto ____switch21_case_17
+    elseif ____switch21 == \\"textAlignment\\" then
+        goto ____switch21_case_18
+    elseif ____switch21 == \\"position\\" then
+        goto ____switch21_case_19
+    elseif ____switch21 == \\"absPosition\\" then
+        goto ____switch21_case_20
+    elseif ____switch21 == \\"onClick\\" then
+        goto ____switch21_case_21
+    elseif ____switch21 == \\"onMouseEnter\\" then
+        goto ____switch21_case_22
+    elseif ____switch21 == \\"onMouseLeave\\" then
+        goto ____switch21_case_23
+    elseif ____switch21 == \\"onMouseUp\\" then
+        goto ____switch21_case_24
+    elseif ____switch21 == \\"onMouseDown\\" then
+        goto ____switch21_case_25
+    elseif ____switch21 == \\"onMouseWheel\\" then
+        goto ____switch21_case_26
+    elseif ____switch21 == \\"onCheckboxChecked\\" then
+        goto ____switch21_case_27
+    elseif ____switch21 == \\"onCheckboxUnchecked\\" then
+        goto ____switch21_case_28
+    elseif ____switch21 == \\"onEditboxTextChanged\\" then
+        goto ____switch21_case_29
+    elseif ____switch21 == \\"onPopupmenuItemChanged\\" then
+        goto ____switch21_case_30
+    elseif ____switch21 == \\"onDoubleClick\\" then
+        goto ____switch21_case_31
+    elseif ____switch21 == \\"onSpriteAnimUpdate\\" then
+        goto ____switch21_case_32
+    elseif ____switch21 == \\"onSliderChanged\\" then
+        goto ____switch21_case_33
+    elseif ____switch21 == \\"onDialogCancel\\" then
+        goto ____switch21_case_34
+    elseif ____switch21 == \\"onDialogAccept\\" then
+        goto ____switch21_case_35
+    elseif ____switch21 == \\"onEditboxEnter\\" then
+        goto ____switch21_case_36
+    elseif ____switch21 == \\"name\\" then
+        goto ____switch21_case_37
+    elseif ____switch21 == \\"priority\\" then
+        goto ____switch21_case_38
+    elseif ____switch21 == \\"isSimple\\" then
+        goto ____switch21_case_39
+    elseif ____switch21 == \\"typeName\\" then
+        goto ____switch21_case_40
+    elseif ____switch21 == \\"inherits\\" then
+        goto ____switch21_case_41
+    elseif ____switch21 == \\"children\\" then
+        goto ____switch21_case_42
+    elseif ____switch21 == \\"context\\" then
+        goto ____switch21_case_43
+    elseif ____switch21 == \\"key\\" then
+        goto ____switch21_case_44
     end
-    goto ____switch4_case_default
-    ::____switch4_case_0::
+    goto ____switch21_case_default
+    ::____switch21_case_0::
     do
         do
             BlzFrameSetText(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_1::
+    ::____switch21_case_1::
     do
         do
             BlzFrameSetTextSizeLimit(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_2::
+    ::____switch21_case_2::
     do
         do
             BlzFrameSetTextColor(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_3::
+    ::____switch21_case_3::
     do
         do
             BlzFrameSetTexture(
@@ -1722,7 +1891,7 @@ setProp = function(frame, prop, value)
                     else
                         return ____lhs
                     end
-                end)(val.txFile),
+                end)(val.texFile),
                 (function(____lhs)
                     if ____lhs == nil then
                         return frameDefaults.texture.flag
@@ -1738,10 +1907,10 @@ setProp = function(frame, prop, value)
                     end
                 end)(val.blend)
             )
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_4::
+    ::____switch21_case_4::
     do
         do
             BlzFrameSetModel(
@@ -1761,66 +1930,89 @@ setProp = function(frame, prop, value)
                     end
                 end)(val.cameraIndex)
             )
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_5::
+    ::____switch21_case_5::
     do
         do
             BlzFrameSetAlpha(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_6::
+    ::____switch21_case_6::
     do
         do
             BlzFrameSetLevel(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_7::
+    ::____switch21_case_7::
     do
         do
             BlzFrameSetVisible(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_8::
+    ::____switch21_case_8::
     do
         do
             BlzFrameSetEnable(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_9::
+    ::____switch21_case_9::
     do
         do
             BlzFrameSetVertexColor(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_10::
+    ::____switch21_case_10::
     do
         do
             BlzFrameSetValue(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_11::
+    ::____switch21_case_11::
+    do
+        do
+            BlzFrameSetSize(
+                frame,
+                (function(____lhs)
+                    if ____lhs == nil then
+                        return frameDefaults.size.width
+                    else
+                        return ____lhs
+                    end
+                end)(val.width),
+                (function(____lhs)
+                    if ____lhs == nil then
+                        return frameDefaults.size.height
+                    else
+                        return ____lhs
+                    end
+                end)(val.height)
+            )
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_12::
     do
         do
             BlzFrameSetStepSize(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_12::
+    ::____switch21_case_13::
     do
         do
             BlzFrameSetTooltip(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_13::
+    ::____switch21_case_14::
     do
         do
             BlzFrameSetFont(
@@ -1847,10 +2039,10 @@ setProp = function(frame, prop, value)
                     end
                 end)(val.flags)
             )
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_14::
+    ::____switch21_case_15::
     do
         do
             BlzFrameSetMinMaxValue(
@@ -1870,17 +2062,17 @@ setProp = function(frame, prop, value)
                     end
                 end)(val.max)
             )
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_15::
+    ::____switch21_case_16::
     do
         do
             BlzFrameSetScale(frame, val)
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_16::
+    ::____switch21_case_17::
     do
         do
             BlzFrameSetSpriteAnimate(
@@ -1900,10 +2092,10 @@ setProp = function(frame, prop, value)
                     end
                 end)(val.flags)
             )
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_17::
+    ::____switch21_case_18::
     do
         do
             BlzFrameSetTextAlignment(
@@ -1923,66 +2115,220 @@ setProp = function(frame, prop, value)
                     end
                 end)(val.horz)
             )
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_18::
+    ::____switch21_case_19::
     do
         do
             if val ~= nil then
-                val:forEach(
-                    function(position)
-                        if position == \\"clear\\" then
-                            BlzFrameClearAllPoints(frame)
+                for ____, position in ipairs(val) do
+                    if position == \\"clear\\" then
+                        BlzFrameClearAllPoints(frame)
+                    elseif position == \\"parent\\" then
+                        BlzFrameSetAllPoints(
+                            frame,
+                            BlzFrameGetParent(frame)
+                        )
+                    else
+                        local relative = resolveRelative(frame, position.relative)
+                        if relative then
+                            BlzFrameSetPoint(frame, position.point, relative, position.relativePoint, position.x or 0, position.y or 0)
                         else
-                            BlzFrameSetPoint(frame, position.point, position.relative, position.relativePoint, position.x or 0, position.y or 0)
+                            local parentRelative = previousToParentPoint(position.relativePoint)
+                            if parentRelative then
+                                BlzFrameSetPoint(
+                                    frame,
+                                    position.point,
+                                    BlzFrameGetParent(frame),
+                                    parentRelative,
+                                    position.x or 0,
+                                    position.y or 0
+                                )
+                            end
                         end
                     end
-                )
+                end
             end
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_19::
+    ::____switch21_case_20::
     do
         do
             if val ~= nil then
-                val:forEach(
-                    function(absPosition)
-                        if absPosition == \\"clear\\" then
-                            BlzFrameClearAllPoints(frame)
-                        else
-                            BlzFrameSetAbsPoint(frame, absPosition.point, absPosition.x or 0, absPosition.y or 0)
-                        end
+                for ____, absPosition in ipairs(val) do
+                    if absPosition == \\"clear\\" then
+                        BlzFrameClearAllPoints(frame)
+                    else
+                        BlzFrameSetAbsPoint(frame, absPosition.point, absPosition.x or 0, absPosition.y or 0)
                     end
-                )
+                end
             end
-            goto ____switch4_end
+            goto ____switch21_end
         end
     end
-    ::____switch4_case_20::
+    ::____switch21_case_21::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_CONTROL_CLICK, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_22::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_MOUSE_ENTER, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_23::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_MOUSE_LEAVE, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_24::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_MOUSE_UP, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_25::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_MOUSE_DOWN, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_26::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_MOUSE_WHEEL, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_27::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_CHECKBOX_CHECKED, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_28::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_CHECKBOX_UNCHECKED, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_29::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_EDITBOX_TEXT_CHANGED, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_30::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_POPUPMENU_ITEM_CHANGED, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_31::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_MOUSE_DOUBLECLICK, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_32::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_SPRITE_ANIM_UPDATE, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_33::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_SLIDER_VALUE_CHANGED, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_34::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_DIALOG_CANCEL, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_35::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_DIALOG_ACCEPT, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_36::
+    do
+        do
+            setEventProp(frame, FRAMEEVENT_EDITBOX_ENTER, val, _oldValue)
+            goto ____switch21_end
+        end
+    end
+    ::____switch21_case_37::
     do
     end
-    ::____switch4_case_21::
+    ::____switch21_case_38::
     do
     end
-    ::____switch4_case_22::
+    ::____switch21_case_39::
     do
-        goto ____switch4_end
     end
-    ::____switch4_case_default::
+    ::____switch21_case_40::
+    do
+    end
+    ::____switch21_case_41::
+    do
+    end
+    ::____switch21_case_42::
+    do
+    end
+    ::____switch21_case_43::
+    do
+    end
+    ::____switch21_case_44::
+    do
+        goto ____switch21_end
+    end
+    ::____switch21_case_default::
     do
         absurd(prop)
     end
-    ::____switch4_end::
+    ::____switch21_end::
 end
 ____exports.adapter = {
-    createFrame = function(____, jsxType, parentFrame, ____bindingPattern0)
-        local name = ____bindingPattern0.name
-        local priority = ____bindingPattern0.priority
-        local isSimple = ____bindingPattern0.isSimple
-        local props = __TS__ObjectRest(____bindingPattern0, {name = true, priority = true, isSimple = true, props = true})
+    createFrame = function(____, jsxType, parentFrame, props)
         local frame
+        local name = props.name
+        if name == nil then
+            name = frameDefaults.name
+        end
+        local priority = props.priority
+        if priority == nil then
+            priority = frameDefaults.priority
+        end
+        local typeName = props.typeName
+        local inherits = props.inherits
+        local isSimple = props.isSimple
+        local context = props.context
+        if context == nil then
+            context = frameDefaults.context
+        end
         if (function(____lhs)
             if ____lhs == nil then
                 return jsxType == \\"simple-frame\\"
@@ -1991,13 +2337,9 @@ ____exports.adapter = {
             end
         end)(isSimple) then
             frame = BlzCreateSimpleFrame(name, parentFrame, context)
+        elseif typeName then
+            frame = BlzCreateFrameByType(typeName, name, parentFrame, inherits or \\"\\", context)
         else
-            if priority == nil then
-                error(
-                    __TS__New(Error, \\"Expected a priority!\\"),
-                    0
-                )
-            end
             frame = BlzCreateFrame(name, parentFrame, priority, context)
         end
         ____exports.adapter:updateFrameProperties(frame, {}, props)
@@ -2009,13 +2351,31 @@ ____exports.adapter = {
         for ____value in pairs(prevProps) do
             prop = ____value
             if not (nextProps[prop] ~= nil) then
-                setProp(frame, prop)
+                do
+                    local ____try, err = pcall(
+                        function()
+                            setProp(frame, prop)
+                        end
+                    )
+                    if not ____try then
+                        print(err)
+                    end
+                end
             end
         end
         for ____value in pairs(nextProps) do
             prop = ____value
             if nextProps[prop] ~= prevProps[prop] then
-                setProp(frame, prop, nextProps[prop])
+                do
+                    local ____try, err = pcall(
+                        function()
+                            setProp(frame, prop, nextProps[prop], prevProps[prop])
+                        end
+                    )
+                    if not ____try then
+                        print(err)
+                    end
+                end
             end
         end
     end,
@@ -2023,57 +2383,1038 @@ ____exports.adapter = {
 }
 return ____exports
 end,
-[\\".src.src.index\\"] = function() local ____exports = {}
-local ____basic_2Dpragma = require(\\"src.basic-pragma\\")
-local setAdapter = ____basic_2Dpragma.setAdapter
-local ____adapter = require(\\"src.adapter\\")
+[\\"src.basic-pragma.common\\"] = function() local ____exports = {}
+____exports.TEXT_ELEMENT = \\"TEXT ELEMENT\\"
+return ____exports
+end,
+[\\"src.basic-pragma.reconciler\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____adapter = require(\\"src.basic-pragma.adapter\\")
 local adapter = ____adapter.adapter
-setAdapter(nil, adapter)
-do
-    local ____basic_2Dpragma = require(\\"src.basic-pragma\\")
-    local createElement = ____basic_2Dpragma.createElement
-    local render = ____basic_2Dpragma.render
-    ____exports.createElement = createElement
-    ____exports.render = render
+local ____common = require(\\"src.basic-pragma.common\\")
+local TEXT_ELEMENT = ____common.TEXT_ELEMENT
+local cleanupFrames, reconcileChildren, instantiate, functionalComponentClasses, isClass, createPublicInstance, updateInstance
+function ____exports.reconcile(parentFrame, instance, vnode)
+    do
+        local ____try, err, ____returnValue = pcall(
+            function()
+                if not instance then
+                    return true, instantiate(vnode, parentFrame)
+                elseif not vnode then
+                    cleanupFrames(instance)
+                    return true, nil
+                elseif instance.vnode.type ~= vnode.type then
+                    local newInstance = instantiate(vnode, parentFrame)
+                    cleanupFrames(instance)
+                    return true, newInstance
+                else
+                    local instanceOfSameType = instance
+                    if type(vnode.type) == \\"string\\" then
+                        adapter:updateFrameProperties(instance.hostFrame, instance.vnode.props, vnode.props)
+                        instance.childInstances = reconcileChildren(instance, vnode)
+                        instanceOfSameType.vnode = vnode
+                        return true, instanceOfSameType
+                    elseif instanceOfSameType.publicInstance then
+                        instanceOfSameType.publicInstance.props = vnode.props
+                        ____exports.hooks.beforeRender(instanceOfSameType.publicInstance)
+                        local childElement = instanceOfSameType.publicInstance:render(vnode.props)
+                        if not childElement then
+                            error(\\"Failed to render child\\", 0)
+                        end
+                        local oldChildInstance = instanceOfSameType.childInstance
+                        local childInstance = ____exports.reconcile(parentFrame, oldChildInstance, childElement)
+                        if not childInstance then
+                            error(\\"Failed to update composite instance\\", 0)
+                        end
+                        instanceOfSameType.hostFrame = childInstance.hostFrame
+                        instanceOfSameType.childInstance = childInstance
+                        instanceOfSameType.vnode = vnode
+                        return true, instanceOfSameType
+                    else
+                        error(\\"Reconciler catch all error\\", 0)
+                    end
+                end
+                return true, nil
+            end
+        )
+        if not ____try then
+            err, ____returnValue = (function()
+                print(err)
+                return true, nil
+            end)()
+        end
+        if err then
+            return ____returnValue
+        end
+    end
 end
-do
-    local ____tstl_2Djsx = require(\\"src.tstl-jsx\\")
-    local JsxTransformer = ____tstl_2Djsx.JsxTransformer
-    ____exports.JsxTransformer = JsxTransformer
+function cleanupFrames(instance)
+    if instance.childInstances then
+        for ____, child in ipairs(instance.childInstances) do
+            if child ~= nil then
+                cleanupFrames(child)
+            end
+        end
+    end
+    if instance.childInstance then
+        cleanupFrames(instance.childInstance)
+    end
+    adapter:cleanupFrame(instance.hostFrame)
+end
+function reconcileChildren(instance, vnode)
+    local hostFrame = instance.hostFrame
+    local childInstances = instance.childInstances
+    local nextChildElements = vnode.props.children or ({})
+    local newChildInstances = {}
+    local count = math.max(#childInstances, #nextChildElements)
+    do
+        local i = 0
+        while i < count do
+            local childInstance = childInstances[i + 1]
+            local childElement = nextChildElements[i + 1]
+            local newChildInstance = ____exports.reconcile(hostFrame, childInstance, childElement)
+            __TS__ArrayPush(newChildInstances, newChildInstance)
+            i = i + 1
+        end
+    end
+    return __TS__ArrayFilter(
+        newChildInstances,
+        function(____, instance) return instance ~= nil end
+    )
+end
+function instantiate(vnode, parentFrame)
+    local ____type = vnode.type
+    local props = vnode.props
+    if type(____type) == \\"string\\" then
+        if ____type == TEXT_ELEMENT then
+            error(\\"Cannot create inline text, yet\\", 0)
+        end
+        local frame = adapter:createFrame(____type, parentFrame, props)
+        local childElements = props.children or ({})
+        local childInstances = __TS__ArrayMap(
+            childElements,
+            function(____, child) return instantiate(child, frame) end
+        )
+        local instance = {hostFrame = frame, vnode = vnode, childInstances = childInstances, childInstance = nil}
+        return instance
+    else
+        local instance = {}
+        local publicInstance = createPublicInstance(vnode, instance)
+        ____exports.hooks.beforeRender(publicInstance)
+        local childElement = publicInstance:render(props)
+        local childInstance = (childElement and instantiate(childElement, parentFrame)) or nil
+        local hostFrame = childInstance.hostFrame
+        local updateProps = {hostFrame = hostFrame, vnode = vnode, childInstance = childInstance, publicInstance = publicInstance}
+        __TS__ObjectAssign(instance, updateProps)
+        return instance
+    end
+end
+function createPublicInstance(vnode, internalInstance)
+    local ComponentType = vnode.type
+    local props = vnode.props
+    local constructor
+    if type(ComponentType) == \\"string\\" then
+        error(\\"Tried createPublicInstance() with string\\", 0)
+    elseif isClass(ComponentType) then
+        constructor = ComponentType
+    else
+        local renderFunc
+        renderFunc = ComponentType
+        local existingClass = functionalComponentClasses:get(renderFunc)
+        if existingClass then
+            constructor = existingClass
+        else
+            constructor = (function()
+                local ____ = __TS__Class()
+                ____.name = ____.name
+                __TS__ClassExtends(____, ____exports.ClassComponent)
+                function ____.prototype.render(self, props)
+                    return renderFunc(props)
+                end
+                return ____
+            end)()
+            functionalComponentClasses:set(renderFunc, constructor)
+        end
+    end
+    local publicInstance = __TS__New(constructor, props)
+    publicInstance.instance = internalInstance
+    return publicInstance
+end
+function updateInstance(internalInstance)
+    local parentDom = adapter:getParent(internalInstance.hostFrame)
+    local vnode = internalInstance.vnode
+    if parentDom then
+        ____exports.reconcile(parentDom, internalInstance, vnode)
+    else
+        error(\\"Tried to reconcile instance with no dom.parentDom\\", 0)
+    end
+end
+____exports.hooks = {
+    beforeRender = function(instance)
+    end
+}
+local rootInstance = nil
+function ____exports.render(vnode, container)
+    local prevInstance = rootInstance
+    local nextInstance = ____exports.reconcile(container, prevInstance, vnode)
+    rootInstance = nextInstance
+end
+functionalComponentClasses = __TS__New(WeakMap)
+local isLua = _G._VERSION ~= nil
+isClass = function(constructor)
+    if isLua then
+        return type(constructor) ~= \\"function\\"
+    else
+        return constructor.prototype ~= nil
+    end
+end
+local instanceMap = __TS__New(WeakMap)
+____exports.ClassComponent = __TS__Class()
+local ClassComponent = ____exports.ClassComponent
+ClassComponent.name = \\"ClassComponent\\"
+function ClassComponent.prototype.____constructor(self, props)
+    self.props = props
+    self.state = {}
+end
+__TS__SetDescriptor(
+    ClassComponent.prototype,
+    \\"instance\\",
+    {
+        set = function(self, instance)
+            instanceMap:set(self, instance)
+        end
+    }
+)
+function ClassComponent.prototype.setState(self, partialState)
+    self.state = __TS__ObjectAssign({}, self.state, partialState)
+    local instance = instanceMap:get(self)
+    if instance then
+        updateInstance(instance)
+    end
 end
 return ____exports
 end,
-[\\".src.src.types\\"] = function() end,
-[\\".src.src.test.build.test\\"] = function() local ____exports = {}
-local tstl = require(\\"src.test.typescript-to-lua\\")
-local ____fs = require(\\"src.test.fs\\")
+[\\"src.basic-pragma.Component\\"] = function() local ____exports = {}
+return ____exports
+end,
+[\\"src.basic-pragma.element\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____common = require(\\"src.basic-pragma.common\\")
+local TEXT_ELEMENT = ____common.TEXT_ELEMENT
+local createTextElement
+function ____exports.createElement(____type, config, children)
+    local ____ = __TS__ObjectAssign({}, config)
+    local key = ____.key
+    if key == nil then
+        key = nil
+    end
+    local props = __TS__ObjectRest(____, {key = true, props = true})
+    local flattenedChildren = __TS__ArrayMap(
+        __TS__ArrayFilter(
+            __TS__ArrayFlat(((children and (#children > 0)) and children) or ({})),
+            function(____, c) return ((c ~= nil) and (type(c) ~= \\"boolean\\")) and ((type(c) == \\"string\\") or (not (not c.type))) end
+        ),
+        function(____, c) return ((type(c) == \\"string\\") and createTextElement(c)) or c end
+    )
+    if #flattenedChildren > 0 then
+        props.children = flattenedChildren
+    else
+        props.children = nil
+    end
+    local vnode = {type = ____type, props = props}
+    if key ~= nil then
+        vnode.key = key
+    end
+    return vnode
+end
+function createTextElement(value)
+    return ____exports.createElement(TEXT_ELEMENT, {nodeValue = value})
+end
+local EMPTY_OBJECT = {}
+____exports.Fragment = function(props) return props.children end
+return ____exports
+end,
+[\\"src.basic-pragma.hooks.base\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____reconciler = require(\\"src.basic-pragma.reconciler\\")
+local hooks = ____reconciler.hooks
+local oldBeforeRender
+oldBeforeRender = hooks.beforeRender
+____exports.hookContext = {}
+____exports.hookMap = __TS__New(WeakMap)
+hooks.beforeRender = function(instance)
+    oldBeforeRender(instance)
+    ____exports.hookContext.currentInstance = instance
+    ____exports.hookContext.currentIndex = 0
+    if not ____exports.hookMap:has(instance) then
+        ____exports.hookMap:set(instance, {})
+    end
+end
+return ____exports
+end,
+[\\"src.basic-pragma.hooks.useReducer\\"] = function() local ____exports = {}
+local ____base = require(\\"src.basic-pragma.hooks.base\\")
+local hookContext = ____base.hookContext
+local hookMap = ____base.hookMap
+____exports.useReducer = function(reducer, initialState)
+    local index = (function()
+        local ____tmp = hookContext.currentIndex
+        hookContext.currentIndex = ____tmp + 1
+        return ____tmp
+    end)()
+    local hooks = hookMap:get(hookContext.currentInstance)
+    local state = hooks[index + 1] or (function(o, i, v)
+        o[i] = v
+        return v
+    end)(hooks, index + 1, {})
+    state.reducer = reducer
+    if not state.instance then
+        state.value = {
+            initialState,
+            function(action)
+                local nextValue = state.reducer(state.value[1], action)
+                if state.value[1] ~= nextValue then
+                    state.value = {nextValue, state.value[2]}
+                    state.instance:setState({})
+                end
+            end
+        }
+        state.instance = hookContext.currentInstance
+    end
+    return state.value
+end
+return ____exports
+end,
+[\\"src.basic-pragma.hooks.useState\\"] = function() local ____exports = {}
+local ____useReducer = require(\\"src.basic-pragma.hooks.useReducer\\")
+local useReducer = ____useReducer.useReducer
+____exports.useState = function(initialState) return useReducer(
+    function(_, v) return v end,
+    initialState
+) end
+return ____exports
+end,
+[\\"src.index\\"] = function() local ____exports = {}
+local ____adapter = require(\\"src.adapter\\")
+local adapter = ____adapter.adapter
+local ____adapter = require(\\"src.basic-pragma.adapter\\")
+local setAdapter = ____adapter.setAdapter
+setAdapter(adapter)
+do
+    local ____useState = require(\\"src.basic-pragma.hooks.useState\\")
+    local useState = ____useState.useState
+    ____exports.useState = useState
+end
+do
+    local ____element = require(\\"src.basic-pragma.element\\")
+    local createElement = ____element.createElement
+    local Fragment = ____element.Fragment
+    ____exports.createElement = createElement
+    ____exports.Fragment = Fragment
+end
+do
+    local ____reconciler = require(\\"src.basic-pragma.reconciler\\")
+    local render = ____reconciler.render
+    ____exports.render = render
+end
+return ____exports
+end,
+[\\"src.transformers\\"] = function() local ____exports = {}
+do
+    local ____export = require(\\"tstl-jsx\\")
+    for ____exportKey, ____exportValue in pairs(____export) do
+        ____exports[____exportKey] = ____exportValue
+    end
+end
+return ____exports
+end,
+[\\"src.basic-pragma.test.testAdapter\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+____exports.TestFrame = __TS__Class()
+local TestFrame = ____exports.TestFrame
+TestFrame.name = \\"TestFrame\\"
+function TestFrame.prototype.____constructor(self, props, parent, jsxType)
+    self.type = \\"test-frame\\"
+    self.children = {}
+    self.props = props or ({})
+    self.jsxType = jsxType
+    __TS__ArrayPush(parent.children, self)
+end
+function TestFrame.prototype.dispose(self)
+    if self.parent then
+        local index = __TS__ArrayIndexOf(self.parent.children, self)
+        if index >= 0 then
+            __TS__ArraySplice(self.parent.children, index, 1)
+        end
+    end
+    self.disposed = true
+    for ____, child in ipairs(self.children) do
+        child:dispose()
+    end
+end
+____exports.testAdapter = {
+    createFrame = function(____, jsxType, parentFrame, props) return __TS__New(____exports.TestFrame, props, parentFrame, jsxType) end,
+    cleanupFrame = function(____, frame) return frame:dispose() end,
+    updateFrameProperties = function(____, frame, prevProps, nextProps)
+        for prop in pairs(prevProps) do
+            if not (nextProps[prop] ~= nil) then
+                frame.props[prop] = nil
+            end
+        end
+        for prop in pairs(nextProps) do
+            if nextProps[prop] ~= prevProps[prop] then
+                frame.props[prop] = nextProps[prop]
+            end
+        end
+    end,
+    getParent = function(____, frame) return frame.parent end
+}
+return ____exports
+end,
+[\\"src.basic-pragma.Component.test\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____adapter = require(\\"src.basic-pragma.adapter\\")
+local setAdapter = ____adapter.setAdapter
+local ____element = require(\\"src.basic-pragma.element\\")
+local createElement = ____element.createElement
+local ____reconciler = require(\\"src.basic-pragma.reconciler\\")
+local reconcile = ____reconciler.reconcile
+local ClassComponent = ____reconciler.ClassComponent
+local ____testAdapter = require(\\"src.basic-pragma.test.testAdapter\\")
+local testAdapter = ____testAdapter.testAdapter
+local TestFrame = ____testAdapter.TestFrame
+local Root
+Root = function(____bindingPattern0)
+    local children = ____bindingPattern0.children
+    return children[1] or nil
+end
+local TestClassComponent = __TS__Class()
+TestClassComponent.name = \\"TestClassComponent\\"
+__TS__ClassExtends(TestClassComponent, ClassComponent)
+function TestClassComponent.prototype.____constructor(self, ...)
+    ClassComponent.prototype.____constructor(self, ...)
+    self.state = {foo = \\"bar\\"}
+end
+function TestClassComponent.prototype.render(self)
+    return createElement(
+        \\"frame\\",
+        __TS__ObjectAssign({}, self.state, {innerFrame = true})
+    )
+end
+local setupComponent
+setupComponent = function(props) return reconcile(
+    __TS__New(TestFrame),
+    nil,
+    createElement(
+        Root,
+        {},
+        {
+            createElement(TestClassComponent, props)
+        }
+    )
+) end
+setAdapter(testAdapter)
+describe(
+    nil,
+    \\"state\\",
+    function()
+        it(
+            nil,
+            \\"works\\",
+            function()
+                local component = setupComponent({})
+                local child = component.childInstance
+                local publicInstance = child.publicInstance
+                expect(nil, publicInstance):toBeTruthy()
+                expect(nil, publicInstance.state):toEqual({foo = \\"bar\\"})
+                expect(nil, child.hostFrame.props):toEqual({foo = \\"bar\\", innerFrame = true})
+                publicInstance:setState({foo = \\"baz\\"})
+                expect(nil, publicInstance.state):toEqual({foo = \\"baz\\"})
+                expect(nil, child.hostFrame.props):toEqual({foo = \\"baz\\", innerFrame = true})
+            end
+        )
+    end
+)
+return ____exports
+end,
+[\\"src.basic-pragma.adapter.test\\"] = function() local ____exports = {}
+local ____adapter = require(\\"src.basic-pragma.adapter\\")
+local adapter = ____adapter.adapter
+local setAdapter = ____adapter.setAdapter
+describe(
+    nil,
+    \\"setAdapter\\",
+    function()
+        describe(
+            nil,
+            \\"methods\\",
+            function()
+                it(
+                    nil,
+                    \\"createFrame\\",
+                    function()
+                        expect(
+                            nil,
+                            function() return adapter:createFrame(\\"foo\\", {}, {}) end
+                        ):toThrow(\\"Adapter has not implemented createFrame\\")
+                        local createFrame = jest:fn()
+                        setAdapter({createFrame = createFrame})
+                        adapter:createFrame(\\"foo\\", {}, {})
+                        expect(nil, createFrame):toHaveBeenCalled()
+                    end
+                )
+                it(
+                    nil,
+                    \\"cleanupFrame\\",
+                    function()
+                        expect(
+                            nil,
+                            function() return adapter:cleanupFrame(\\"foo\\") end
+                        ):toThrow(\\"Adapter has not implemented cleanupFrame\\")
+                        local cleanupFrame = jest:fn()
+                        setAdapter({cleanupFrame = cleanupFrame})
+                        adapter:cleanupFrame({})
+                        expect(nil, cleanupFrame):toHaveBeenCalled()
+                    end
+                )
+                it(
+                    nil,
+                    \\"updateFrameProperties\\",
+                    function()
+                        expect(
+                            nil,
+                            function() return adapter:updateFrameProperties(\\"foo\\", {}, {}) end
+                        ):toThrow(\\"Adapter has not implemented updateFrameProperties\\")
+                        local updateFrameProperties = jest:fn()
+                        setAdapter({updateFrameProperties = updateFrameProperties})
+                        adapter:updateFrameProperties({}, {}, {})
+                        expect(nil, updateFrameProperties):toHaveBeenCalled()
+                    end
+                )
+                it(
+                    nil,
+                    \\"getParent\\",
+                    function()
+                        expect(
+                            nil,
+                            function() return adapter:getParent(\\"foo\\") end
+                        ):toThrow(\\"Adapter has not implemented getParent\\")
+                        local getParent = jest:fn()
+                        setAdapter({getParent = getParent})
+                        adapter:getParent({})
+                        expect(nil, getParent):toHaveBeenCalled()
+                    end
+                )
+            end
+        )
+        it(
+            nil,
+            \\"clears other methods\\",
+            function()
+                expect(
+                    nil,
+                    function() return adapter:createFrame(\\"foo\\", {}, {}) end
+                ):toThrow(\\"Adapter has not implemented createFrame\\")
+                expect(
+                    nil,
+                    function() return adapter:cleanupFrame(\\"foo\\") end
+                ):toThrow(\\"Adapter has not implemented cleanupFrame\\")
+                local createFrame = jest:fn()
+                setAdapter({createFrame = createFrame})
+                adapter:createFrame(\\"foo\\", {}, {})
+                expect(nil, createFrame):toHaveBeenCalled()
+                expect(
+                    nil,
+                    function() return adapter:cleanupFrame(\\"foo\\") end
+                ):toThrow(\\"Adapter has not implemented cleanupFrame\\")
+                local cleanupFrame = jest:fn()
+                setAdapter({cleanupFrame = cleanupFrame})
+                adapter:cleanupFrame({})
+                expect(
+                    nil,
+                    function() return adapter:createFrame(\\"foo\\", {}, {}) end
+                ):toThrow(\\"Adapter has not implemented createFrame\\")
+                expect(nil, cleanupFrame):toHaveBeenCalled()
+            end
+        )
+    end
+)
+return ____exports
+end,
+[\\"src.basic-pragma.element.test\\"] = function() local ____exports = {}
+local ____element = require(\\"src.basic-pragma.element\\")
+local createElement = ____element.createElement
+local ____common = require(\\"src.basic-pragma.common\\")
+local TEXT_ELEMENT = ____common.TEXT_ELEMENT
+describe(
+    nil,
+    \\"createElement\\",
+    function()
+        it(
+            nil,
+            \\"empty\\",
+            function()
+                expect(
+                    nil,
+                    createElement(\\"node\\")
+                ):toEqual({type = \\"node\\", props = {}})
+            end
+        )
+        it(
+            nil,
+            \\"with props\\",
+            function()
+                expect(
+                    nil,
+                    createElement(\\"node\\", {foo = \\"bar\\", baz = 7})
+                ):toEqual({type = \\"node\\", props = {foo = \\"bar\\", baz = 7}})
+            end
+        )
+        it(
+            nil,
+            \\"strips key\\",
+            function()
+                expect(
+                    nil,
+                    createElement(\\"node\\", {foo = \\"bar\\", baz = 7, key = 0})
+                ):toEqual({type = \\"node\\", key = 0, props = {foo = \\"bar\\", baz = 7}})
+            end
+        )
+        it(
+            nil,
+            \\"doesn't render nullish values\\",
+            function()
+                expect(
+                    nil,
+                    createElement(\\"node\\", {}, {nil, nil})
+                ):toEqual({type = \\"node\\", props = {}})
+            end
+        )
+        it(
+            nil,
+            \\"doesn't render booleans\\",
+            function()
+                expect(
+                    nil,
+                    createElement(\\"node\\", {}, {false, true})
+                ):toEqual({type = \\"node\\", props = {}})
+            end
+        )
+        it(
+            nil,
+            \\"nested\\",
+            function()
+                expect(
+                    nil,
+                    createElement(
+                        \\"outer\\",
+                        {},
+                        {
+                            createElement(\\"inner\\")
+                        }
+                    )
+                ):toEqual({type = \\"outer\\", props = {children = {{type = \\"inner\\", props = {}}}}})
+            end
+        )
+    end
+)
+describe(
+    nil,
+    \\"createTextElement\\",
+    function()
+        it(
+            nil,
+            \\"works\\",
+            function()
+                expect(
+                    nil,
+                    createElement(\\"outer\\", {}, {\\"inner\\"})
+                ):toEqual({type = \\"outer\\", props = {children = {{type = TEXT_ELEMENT, props = {nodeValue = \\"inner\\"}}}}})
+            end
+        )
+    end
+)
+return ____exports
+end,
+[\\"src.basic-pragma.reconciler.test\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____adapter = require(\\"src.basic-pragma.adapter\\")
+local setAdapter = ____adapter.setAdapter
+local ____element = require(\\"src.basic-pragma.element\\")
+local createElement = ____element.createElement
+local ____reconciler = require(\\"src.basic-pragma.reconciler\\")
+local reconcile = ____reconciler.reconcile
+local render = ____reconciler.render
+local ClassComponent = ____reconciler.ClassComponent
+local ____testAdapter = require(\\"src.basic-pragma.test.testAdapter\\")
+local testAdapter = ____testAdapter.testAdapter
+local TestFrame = ____testAdapter.TestFrame
+setAdapter(testAdapter)
+describe(
+    nil,
+    \\"reconcile\\",
+    function()
+        describe(
+            nil,
+            \\"creating an instance\\",
+            function()
+                describe(
+                    nil,
+                    \\"base type\\",
+                    function()
+                        it(
+                            nil,
+                            \\"first child\\",
+                            function()
+                                local root = __TS__New(TestFrame)
+                                local vnode = createElement(\\"child\\")
+                                local instance = reconcile(root, nil, vnode)
+                                expect(nil, instance):toEqual({childInstance = nil, childInstances = {}, hostFrame = {children = {}, jsxType = \\"child\\", props = {}, type = \\"test-frame\\"}, vnode = vnode})
+                                expect(nil, #root.children):toEqual(1)
+                            end
+                        )
+                        it(
+                            nil,
+                            \\"second child\\",
+                            function()
+                                local root = __TS__New(TestFrame)
+                                __TS__New(TestFrame, nil, root)
+                                local vnode = createElement(\\"child\\")
+                                local instance = reconcile(root, nil, vnode)
+                                expect(nil, instance):toEqual({childInstance = nil, childInstances = {}, hostFrame = {children = {}, jsxType = \\"child\\", props = {}, type = \\"test-frame\\"}, vnode = vnode})
+                                expect(nil, #root.children):toEqual(2)
+                            end
+                        )
+                        it(
+                            nil,
+                            \\"child with props\\",
+                            function()
+                                local root = __TS__New(TestFrame)
+                                local vnode = createElement(\\"child\\", {foo = \\"bar\\"})
+                                local instance = reconcile(root, nil, vnode)
+                                expect(nil, instance):toEqual({childInstance = nil, childInstances = {}, hostFrame = {children = {}, jsxType = \\"child\\", props = {foo = \\"bar\\"}, type = \\"test-frame\\"}, vnode = vnode})
+                                expect(nil, #root.children):toEqual(1)
+                            end
+                        )
+                        it(
+                            nil,
+                            \\"nested children\\",
+                            function()
+                                local root = __TS__New(TestFrame)
+                                local grandChildVNode = createElement(\\"grandchild\\")
+                                local vnode = createElement(\\"child\\", nil, {grandChildVNode})
+                                local instance = reconcile(root, nil, vnode)
+                                local grandchildFrame = {children = {}, jsxType = \\"grandchild\\", props = {}, type = \\"test-frame\\"}
+                                local grandchildVnode = {type = \\"grandchild\\", props = {}}
+                                expect(nil, instance):toEqual({childInstance = nil, childInstances = {{childInstance = nil, childInstances = {}, hostFrame = grandchildFrame, vnode = grandchildVnode}}, hostFrame = {children = {grandchildFrame}, jsxType = \\"child\\", props = {children = {grandChildVNode}}, type = \\"test-frame\\"}, vnode = vnode})
+                                expect(nil, #root.children):toEqual(1)
+                            end
+                        )
+                    end
+                )
+                it(
+                    nil,
+                    \\"functional components\\",
+                    function()
+                        local FunctionalComponent
+                        FunctionalComponent = function(props) return createElement(\\"base\\", props) end
+                        local root = __TS__New(TestFrame)
+                        local props = {foo = \\"bar\\"}
+                        local vnode = createElement(FunctionalComponent, props)
+                        local instance = reconcile(root, nil, vnode)
+                        local hostFrame = {children = {}, jsxType = \\"base\\", props = props, type = \\"test-frame\\"}
+                        expect(nil, instance):toEqual({childInstance = {childInstance = nil, childInstances = {}, hostFrame = hostFrame, vnode = {props = props, type = \\"base\\"}}, publicInstance = {props = props, state = {}}, hostFrame = hostFrame, vnode = vnode})
+                    end
+                )
+                it(
+                    nil,
+                    \\"class components\\",
+                    function()
+                        local TestClassComponent = __TS__Class()
+                        TestClassComponent.name = \\"TestClassComponent\\"
+                        __TS__ClassExtends(TestClassComponent, ClassComponent)
+                        function TestClassComponent.prototype.render(self, props)
+                            return createElement(\\"base\\", props)
+                        end
+                        local root = __TS__New(TestFrame)
+                        local props = {foo = \\"bar\\"}
+                        local vnode = createElement(TestClassComponent, props)
+                        local instance = reconcile(root, nil, vnode)
+                        local hostFrame = {children = {}, jsxType = \\"base\\", props = props, type = \\"test-frame\\"}
+                        expect(nil, instance):toEqual({childInstance = {childInstance = nil, childInstances = {}, hostFrame = hostFrame, vnode = {props = props, type = \\"base\\"}}, publicInstance = {props = props, state = {}}, hostFrame = hostFrame, vnode = vnode})
+                    end
+                )
+            end
+        )
+        describe(
+            nil,
+            \\"removing instances\\",
+            function()
+                it(
+                    nil,
+                    \\"removing an instance\\",
+                    function()
+                        local root = __TS__New(TestFrame)
+                        local vnode = createElement(\\"child\\")
+                        local instance = reconcile(root, nil, vnode)
+                        expect(nil, root):toEqual(
+                            expect:objectContaining({children = {instance.hostFrame}})
+                        )
+                        reconcile(root, instance, nil)
+                        expect(nil, root):toEqual(
+                            expect:objectContaining({children = {}})
+                        )
+                    end
+                )
+                it(
+                    nil,
+                    \\"removing child instances\\",
+                    function()
+                        local root = __TS__New(TestFrame)
+                        local vnode = createElement(
+                            \\"child\\",
+                            {},
+                            {
+                                createElement(\\"grandchild\\"),
+                                createElement(\\"grandchild\\")
+                            }
+                        )
+                        local instance = reconcile(root, nil, vnode)
+                        expect(nil, root):toEqual(
+                            expect:objectContaining({children = {instance.hostFrame}})
+                        )
+                        reconcile(root, instance, nil)
+                        expect(nil, root):toEqual(
+                            expect:objectContaining({children = {}})
+                        )
+                    end
+                )
+            end
+        )
+        it(
+            nil,
+            \\"replacing an instance\\",
+            function()
+                local root = __TS__New(TestFrame)
+                local oldChild = createElement(\\"old-child\\")
+                local newChild = createElement(\\"new-child\\")
+                local oldInstance = reconcile(root, nil, oldChild)
+                expect(nil, root):toEqual(
+                    expect:objectContaining({children = {oldInstance.hostFrame}})
+                )
+                local newInstance = reconcile(root, oldInstance, newChild)
+                expect(nil, root):toEqual(
+                    expect:objectContaining({children = {newInstance.hostFrame}})
+                )
+                expect(nil, oldInstance)[\\"not\\"]:toEqual(newInstance)
+            end
+        )
+        describe(
+            nil,
+            \\"updating an instance\\",
+            function()
+                it(
+                    nil,
+                    \\"adding props to an instance with none\\",
+                    function()
+                        local root = __TS__New(TestFrame)
+                        local vnode = createElement(\\"child\\")
+                        local instance = reconcile(root, nil, vnode)
+                        expect(nil, root):toEqual(
+                            expect:objectContaining({children = {instance.hostFrame}})
+                        )
+                        local newInstance = reconcile(
+                            root,
+                            instance,
+                            createElement(\\"child\\", {foo = \\"foo-1\\"})
+                        )
+                        expect(nil, newInstance):toEqual(instance)
+                        expect(nil, instance.vnode.props):toEqual({foo = \\"foo-1\\"})
+                    end
+                )
+                it(
+                    nil,
+                    \\"adding, changing, and removing props\\",
+                    function()
+                        local root = __TS__New(TestFrame)
+                        local vnode = createElement(\\"child\\", {foo = \\"foo-1\\", bar = \\"bar-1\\"})
+                        local instance = reconcile(root, nil, vnode)
+                        expect(nil, root):toEqual(
+                            expect:objectContaining({children = {instance.hostFrame}})
+                        )
+                        local newInstance = reconcile(
+                            root,
+                            instance,
+                            createElement(\\"child\\", {bar = \\"bar-2\\", baz = \\"baz-1\\"})
+                        )
+                        expect(nil, newInstance):toEqual(instance)
+                        expect(nil, instance.vnode.props):toEqual({bar = \\"bar-2\\", baz = \\"baz-1\\"})
+                    end
+                )
+                it(
+                    nil,
+                    \\"adding, changing, and removing grandchild props\\",
+                    function()
+                        local root = __TS__New(TestFrame)
+                        local vnode = createElement(
+                            \\"child\\",
+                            {},
+                            {
+                                createElement(\\"grandchild\\", {index = 0}),
+                                createElement(\\"grandchild\\", {index = 1})
+                            }
+                        )
+                        local instance = reconcile(root, nil, vnode)
+                        expect(nil, root):toEqual(
+                            expect:objectContaining({children = {instance.hostFrame}})
+                        )
+                        local newInstance = reconcile(
+                            root,
+                            instance,
+                            createElement(
+                                \\"child\\",
+                                {},
+                                {
+                                    createElement(\\"grandchild\\", {index = 1}),
+                                    createElement(\\"grandchild\\", {index = 2})
+                                }
+                            )
+                        )
+                        expect(nil, newInstance):toEqual(instance)
+                        expect(nil, instance.hostFrame.children):toEqual({{children = {}, jsxType = \\"grandchild\\", props = {index = 1}, type = \\"test-frame\\"}, {children = {}, jsxType = \\"grandchild\\", props = {index = 2}, type = \\"test-frame\\"}})
+                    end
+                )
+                it(
+                    nil,
+                    \\"updating functional components\\",
+                    function()
+                        local FunctionalComponent
+                        FunctionalComponent = function(props) return createElement(\\"base\\", props) end
+                        local root = __TS__New(TestFrame)
+                        local vnode = createElement(FunctionalComponent, {bar = \\"bar-1\\", foo = \\"foo-1\\"})
+                        local instance = reconcile(root, nil, vnode)
+                        local hostFrame = {children = {}, jsxType = \\"base\\", props = {bar = \\"bar-1\\", foo = \\"foo-1\\"}, type = \\"test-frame\\"}
+                        expect(nil, instance):toEqual({childInstance = {childInstance = nil, childInstances = {}, hostFrame = hostFrame, vnode = {props = {bar = \\"bar-1\\", foo = \\"foo-1\\"}, type = \\"base\\"}}, publicInstance = {props = {bar = \\"bar-1\\", foo = \\"foo-1\\"}, state = {}}, hostFrame = hostFrame, vnode = vnode})
+                        local newInstance = reconcile(
+                            root,
+                            instance,
+                            createElement(FunctionalComponent, {bar = \\"bar-2\\", baz = \\"baz-1\\"})
+                        )
+                        expect(nil, newInstance):toEqual(instance)
+                        expect(nil, instance.vnode.props):toEqual({bar = \\"bar-2\\", baz = \\"baz-1\\"})
+                        expect(nil, instance.publicInstance.props):toEqual(instance.vnode.props)
+                        expect(nil, instance.childInstance.vnode.props):toEqual(instance.vnode.props)
+                    end
+                )
+            end
+        )
+    end
+)
+describe(
+    nil,
+    \\"render\\",
+    function()
+        it(
+            nil,
+            \\"works\\",
+            function()
+                local root = __TS__New(TestFrame)
+                local vnode = createElement(\\"child\\")
+                render(vnode, root)
+                local firstChild = root.children[1]
+                expect(nil, #root.children):toEqual(1)
+                expect(nil, firstChild):toEqual({children = {}, jsxType = \\"child\\", props = {}, type = \\"test-frame\\"})
+                expect(nil, vnode):toEqual({type = \\"child\\", props = {}})
+            end
+        )
+    end
+)
+return ____exports
+end,
+[\\"src.basic-pragma.hooks.useState.test\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____adapter = require(\\"src.basic-pragma.adapter\\")
+local setAdapter = ____adapter.setAdapter
+local ____element = require(\\"src.basic-pragma.element\\")
+local createElement = ____element.createElement
+local ____reconciler = require(\\"src.basic-pragma.reconciler\\")
+local render = ____reconciler.render
+local ____testAdapter = require(\\"src.basic-pragma.test.testAdapter\\")
+local testAdapter = ____testAdapter.testAdapter
+local TestFrame = ____testAdapter.TestFrame
+local ____useState = require(\\"src.basic-pragma.hooks.useState\\")
+local useState = ____useState.useState
+setAdapter(testAdapter)
+it(
+    nil,
+    \\"works\\",
+    function()
+        local fn = jest:fn()
+        local exposedSetState
+        local TestComponent
+        TestComponent = function()
+            local state, setState = table.unpack(
+                useState(\\"foo\\")
+            )
+            exposedSetState = setState
+            fn(nil, state)
+            return createElement(\\"frame\\", {knownState = state})
+        end
+        local root = __TS__New(TestFrame)
+        render(
+            createElement(TestComponent),
+            root
+        )
+        expect(nil, fn):toHaveBeenCalledTimes(1)
+        expect(nil, fn):toHaveBeenCalledWith(\\"foo\\")
+        expect(nil, root.children[1]):toMatchObject({jsxType = \\"frame\\", props = {knownState = \\"foo\\"}})
+        exposedSetState(\\"bar\\")
+        expect(nil, fn):toHaveBeenCalledTimes(2)
+        expect(nil, fn):toHaveBeenCalledWith(\\"bar\\")
+        expect(nil, root.children[1]):toMatchObject({jsxType = \\"frame\\", props = {knownState = \\"bar\\"}})
+    end
+)
+return ____exports
+end,
+[\\"src.basic-pragma.test.setup\\"] = function() globals = _G
+globals.print = console.log
+end,
+[\\"src.test.build.test\\"] = function() local ____exports = {}
+local ____util = require(\\"util\\")
+local inspect = ____util.inspect
+local tstl = require(\\"typescript-to-lua\\")
+local ____fs = require(\\"fs\\")
 local readFileSync = ____fs.readFileSync
-local globals = _G
-globals.TEXT_JUSTIFY_TOP = 0
-globals.TEXT_JUSTIFY_LEFT = 0
 it(
     nil,
     \\"works\\",
     function()
         local result = tstl:transpileProject(\\"src/test/test.tsconfig.json\\")
+        print(
+            inspect(nil, result.diagnostics[1], false, 2, true)
+        )
         expect(nil, result.diagnostics):toHaveLength(0)
         local lua = readFileSync(nil, \\"src/test/__lua__/bundle.lua\\", \\"utf-8\\")
         expect(nil, lua):toMatchSnapshot()
+        expect(
+            nil,
+            ((string.find(lua, \\"createTextElement\\", nil, true) or 0) - 1) >= 0
+        ):toBeTruthy()
     end
 )
 return ____exports
 end,
-[\\".src.src.test.sample\\"] = function() local ____exports = {}
+[\\"src.test.sample\\"] = function() local ____exports = {}
 local React = require(\\"src.index\\")
 local App
 App = function() return React.createElement(\\"frame\\", {name = \\"GLUETEXTBUTTON\\"}) end
-React:render(
+React.render(
     React.createElement(App, {}),
     ORIGIN_FRAME_GAME_UI
 )
 return ____exports
 end,
 }
-return require(\\".src.src.test.sample\\")
+return require(\\"src.test.sample\\")
 "
 `;

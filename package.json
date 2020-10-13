@@ -1,6 +1,6 @@
 {
   "name": "w3ts-jsx",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "JSX for Warcraft III maps",
   "author": "verit",
   "license": "ISC",
@@ -9,7 +9,8 @@
     "build": "tsc --project tsconfig.json",
     "prepublishOnly": "npm run build",
     "test-lint": "eslint src --ext .js,.ts,.tsx",
-    "test": "jest"
+    "test": "jest",
+    "test-debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
   },
   "peerDependencies": {
     "typescript": "^3.9.7",
@@ -17,7 +18,7 @@
     "w3ts": "^2.1.2"
   },
   "dependencies": {
-    "basic-pragma": "^1.0.1",
+    "basic-pragma": "^1.0.2",
     "tstl-jsx": "^1.0.1"
   },
   "devDependencies": {
@@ -37,6 +38,10 @@
     "typescript-to-lua": "^0.35.0",
     "war3-types": "^1.0.2"
   },
+  "files": [
+    "dist/",
+    "src/"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/voces/w3ts-jsx.git"

@@ -1,12 +1,19 @@
-import { Adapter } from "basic-pragma";
+/** @noSelfInFile **/
+
+import { Adapter } from "./basic-pragma/adapter";
 
 // https://wc3modding.info/pages/jass-documentation-database/class/functions/file/common.j/
+// https://discordapp.com/channels/178569180625240064/311662737015046144/764384452867784704
 
-const frameDefaults: Required<FrameProps> = {
+const frameDefaults: Required<FrameProps> & { children: null } = {
 	// immutable props
-	name: "",
+	name: "AnonymousFrame",
 	priority: 0,
 	isSimple: true,
+	typeName: null,
+	inherits: "",
+	context: 0,
+	key: null,
 	// mutable props
 	alpha: 255,
 	enabled: true,
@@ -21,29 +28,137 @@ const frameDefaults: Required<FrameProps> = {
 	text: "",
 	textAlignment: { vert: TEXT_JUSTIFY_TOP, horz: TEXT_JUSTIFY_LEFT },
 	textColor: 0xffffff,
-	texture: { texFile: "", flag: 0, blend: false },
+	texture: { texFile: "", flag: 0, blend: true },
 	tooltip: null,
 	value: 0,
 	vertexColor: 0xffffff,
 	visible: true,
 	position: null,
 	absPosition: null,
+	size: { width: 0.1, height: 0.1 },
+	children: null,
+	// events
+	onClick: null,
+	onMouseEnter: null,
+	onMouseLeave: null,
+	onMouseUp: null,
+	onMouseDown: null,
+	onMouseWheel: null,
+	onCheckboxChecked: null,
+	onCheckboxUnchecked: null,
+	onEditboxTextChanged: null,
+	onPopupmenuItemChanged: null,
+	onDoubleClick: null,
+	onSpriteAnimUpdate: null,
+	onSliderChanged: null,
+	onDialogCancel: null,
+	onDialogAccept: null,
+	onEditboxEnter: null,
 };
 
-const context = 0;
-
 const absurd = (value: never) => {
-	throw new Error(`Got ${value} when expected nothing`);
+	throw `Got ${value} when expected nothing`;
+};
+
+const triggerMap = new WeakMap<() => void, trigger>();
+const conditionMap = new WeakMap<() => void, triggercondition>();
+
+const setEventProp = (
+	frame: framehandle,
+	// This typing is wrong, should be prop: K, value?: FrameProps[K]
+	event: frameeventtype,
+	val?: () => void,
+	oldValue?: () => void,
+) => {
+	// Get the existing trigger
+	let t = triggerMap.get(oldValue!);
+
+	// Destroy it if there's no mouse event
+	if (val == null) {
+		if (t) {
+			DestroyTrigger(t);
+			triggerMap.delete(oldValue!);
+		}
+
+		return;
+	}
+
+	// Create the trigger if ti doesn't exist
+	if (t == null) {
+		t = CreateTrigger();
+		BlzTriggerRegisterFrameEvent(t, frame, event);
+	} else {
+		const condition = conditionMap.get(oldValue!);
+		if (condition) {
+			TriggerRemoveCondition(t, condition);
+			conditionMap.delete(oldValue!);
+		}
+	}
+
+	const condition = TriggerAddCondition(
+		t,
+		Condition(() => {
+			// Clear focus
+			if (event === FRAMEEVENT_CONTROL_CLICK) {
+				BlzFrameSetEnable(frame, false);
+				BlzFrameSetEnable(frame, true);
+			}
+			val();
+			return false;
+		}),
+	);
+	conditionMap.set(val, condition);
+	triggerMap.set(val, t);
+};
+
+const resolveRelative = (
+	frame: framehandle,
+	relative: framehandle | "previous" | "parent",
+) => {
+	if (typeof relative !== "string") return relative;
+
+	switch (relative) {
+		case "parent":
+			return BlzFrameGetParent(frame);
+		case "previous": {
+			const parent = BlzFrameGetParent(frame);
+			const children = BlzFrameGetChildrenCount(parent);
+			let index = -1;
+			for (let i = 0; i < children; i++)
+				if (BlzFrameGetChild(parent, i) === frame) {
+					index = i;
+					break;
+				}
+			if (index > 0) return BlzFrameGetChild(parent, index - 1);
+			return null;
+		}
+		default:
+			absurd(relative);
+	}
+};
+
+const previousToParentPoint = (relative: framepointtype) => {
+	switch (relative) {
+		// Span
+		case FRAMEPOINT_RIGHT:
+			return FRAMEPOINT_LEFT;
+		// Div
+		case FRAMEPOINT_BOTTOM:
+			return FRAMEPOINT_TOP;
+	}
 };
 
 const setProp = (
 	frame: framehandle,
 	// This typing is wrong, should be prop: K, value?: FrameProps[K]
-	prop: keyof FrameProps,
+	prop: keyof FrameProps | "children",
 	value?: FrameProps[keyof FrameProps],
+	oldValue?: FrameProps[keyof FrameProps],
 ) => {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const val = value ?? (frameDefaults[prop] as any);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const _oldValue = oldValue as any;
 	switch (prop) {
 		case "text": {
 			BlzFrameSetText(frame, val);
@@ -60,7 +175,7 @@ const setProp = (
 		case "texture": {
 			BlzFrameSetTexture(
 				frame,
-				val.txFile ?? frameDefaults.texture.texFile,
+				val.texFile ?? frameDefaults.texture.texFile,
 				val.flag ?? frameDefaults.texture.flag,
 				val.blend ?? frameDefaults.texture.blend,
 			);
@@ -96,6 +211,14 @@ const setProp = (
 		}
 		case "value": {
 			BlzFrameSetValue(frame, val);
+			break;
+		}
+		case "size": {
+			BlzFrameSetSize(
+				frame,
+				val.width ?? frameDefaults.size.width,
+				val.height ?? frameDefaults.size.height,
+			);
 			break;
 		}
 		case "stepSize": {
@@ -145,23 +268,45 @@ const setProp = (
 		}
 		case "position": {
 			if (val != null)
-				val.forEach((position: Pos) => {
+				for (const position of val as Pos[])
 					if (position === "clear") BlzFrameClearAllPoints(frame);
-					else
-						BlzFrameSetPoint(
+					else if (position === "parent")
+						BlzFrameSetAllPoints(frame, BlzFrameGetParent(frame));
+					else {
+						const relative = resolveRelative(
 							frame,
-							position.point,
 							position.relative,
-							position.relativePoint,
-							position.x ?? 0,
-							position.y ?? 0,
 						);
-				});
+						if (relative)
+							BlzFrameSetPoint(
+								frame,
+								position.point,
+								relative,
+								position.relativePoint,
+								position.x ?? 0,
+								position.y ?? 0,
+							);
+						// We used `previous` and we're the first child
+						else {
+							const parentRelative = previousToParentPoint(
+								position.relativePoint,
+							);
+							if (parentRelative)
+								BlzFrameSetPoint(
+									frame,
+									position.point,
+									BlzFrameGetParent(frame),
+									parentRelative,
+									position.x ?? 0,
+									position.y ?? 0,
+								);
+						}
+					}
 			break;
 		}
 		case "absPosition": {
 			if (val != null)
-				val.forEach((absPosition: AbsPos) => {
+				for (const absPosition of val as AbsPos[])
 					if (absPosition === "clear") BlzFrameClearAllPoints(frame);
 					else
 						BlzFrameSetAbsPoint(
@@ -170,12 +315,95 @@ const setProp = (
 							absPosition.x ?? 0,
 							absPosition.y ?? 0,
 						);
-				});
+			break;
+		}
+		case "onClick": {
+			setEventProp(frame, FRAMEEVENT_CONTROL_CLICK, val, _oldValue);
+			break;
+		}
+		case "onMouseEnter": {
+			setEventProp(frame, FRAMEEVENT_MOUSE_ENTER, val, _oldValue);
+			break;
+		}
+		case "onMouseLeave": {
+			setEventProp(frame, FRAMEEVENT_MOUSE_LEAVE, val, _oldValue);
+			break;
+		}
+		case "onMouseUp": {
+			setEventProp(frame, FRAMEEVENT_MOUSE_UP, val, _oldValue);
+			break;
+		}
+		case "onMouseDown": {
+			setEventProp(frame, FRAMEEVENT_MOUSE_DOWN, val, _oldValue);
+			break;
+		}
+		case "onMouseWheel": {
+			setEventProp(frame, FRAMEEVENT_MOUSE_WHEEL, val, _oldValue);
+			break;
+		}
+		case "onCheckboxChecked": {
+			setEventProp(frame, FRAMEEVENT_CHECKBOX_CHECKED, val, _oldValue);
+			break;
+		}
+		case "onCheckboxUnchecked": {
+			setEventProp(frame, FRAMEEVENT_CHECKBOX_UNCHECKED, val, _oldValue);
+			break;
+		}
+		case "onEditboxTextChanged": {
+			setEventProp(
+				frame,
+				FRAMEEVENT_EDITBOX_TEXT_CHANGED,
+				val,
+				_oldValue,
+			);
+			break;
+		}
+		case "onPopupmenuItemChanged": {
+			setEventProp(
+				frame,
+				FRAMEEVENT_POPUPMENU_ITEM_CHANGED,
+				val,
+				_oldValue,
+			);
+			break;
+		}
+		case "onDoubleClick": {
+			setEventProp(frame, FRAMEEVENT_MOUSE_DOUBLECLICK, val, _oldValue);
+			break;
+		}
+		case "onSpriteAnimUpdate": {
+			setEventProp(frame, FRAMEEVENT_SPRITE_ANIM_UPDATE, val, _oldValue);
+			break;
+		}
+		case "onSliderChanged": {
+			setEventProp(
+				frame,
+				FRAMEEVENT_SLIDER_VALUE_CHANGED,
+				val,
+				_oldValue,
+			);
+			break;
+		}
+		case "onDialogCancel": {
+			setEventProp(frame, FRAMEEVENT_DIALOG_CANCEL, val, _oldValue);
+			break;
+		}
+		case "onDialogAccept": {
+			setEventProp(frame, FRAMEEVENT_DIALOG_ACCEPT, val, _oldValue);
+			break;
+		}
+		case "onEditboxEnter": {
+			setEventProp(frame, FRAMEEVENT_EDITBOX_ENTER, val, _oldValue);
 			break;
 		}
 		case "name":
 		case "priority":
 		case "isSimple":
+		case "typeName":
+		case "inherits":
+		case "children":
+		case "context":
+		case "key":
 			break;
 		default:
 			absurd(prop);
@@ -186,20 +414,30 @@ export const adapter: Adapter<framehandle> = {
 	createFrame: (
 		jsxType: string,
 		parentFrame: framehandle,
-		{ name, priority, isSimple, ...props }: FrameProps,
+		props: FrameProps,
 	) => {
 		let frame: framehandle;
+		const {
+			name = frameDefaults.name,
+			priority = frameDefaults.priority,
+			typeName,
+			inherits,
+			isSimple,
+			context = frameDefaults.context,
+		} = props;
 		if (isSimple ?? jsxType === "simple-frame")
 			frame = BlzCreateSimpleFrame(name, parentFrame, context);
-		else {
-			// TODO: we can theoretically type this
-			if (priority == null) throw new Error("Expected a priority!");
-			frame = BlzCreateFrame(name, parentFrame, priority, context);
-		}
-
+		else if (typeName)
+			frame = BlzCreateFrameByType(
+				typeName,
+				name,
+				parentFrame,
+				inherits ?? "",
+				context,
+			);
+		else frame = BlzCreateFrame(name, parentFrame, priority, context);
 		// This type casting is safe here, but may cause bugs later...
 		adapter.updateFrameProperties(frame, {}, props);
-
 		return frame;
 	},
 
@@ -211,14 +449,22 @@ export const adapter: Adapter<framehandle> = {
 		nextProps: FrameProps,
 	) => {
 		let prop: keyof FrameProps;
-
 		// Clear removed props
-		for (prop in prevProps) if (!(prop in nextProps)) setProp(frame, prop);
-
+		for (prop in prevProps)
+			if (!(prop in nextProps))
+				try {
+					setProp(frame, prop);
+				} catch (err) {
+					print(err);
+				}
 		// Add new props
 		for (prop in nextProps)
 			if (nextProps[prop] !== prevProps[prop])
-				setProp(frame, prop, nextProps[prop]);
+				try {
+					setProp(frame, prop, nextProps[prop], prevProps[prop]);
+				} catch (err) {
+					print(err);
+				}
 	},
 
 	getParent: (frame: framehandle): framehandle => BlzFrameGetParent(frame),

@@ -9,10 +9,22 @@
 		"moduleResolution": "node",
 		"noImplicitAny": true,
 		"noImplicitThis": true,
-		"outDir": "./dist/",
+		"outDir": ".",
 		"skipLibCheck": true,
+		"strict": true,
 		"strictNullChecks": true,
 		"target": "ESNext",
+		"baseUrl": ".",
+		"rootDir": ".",
+		"paths": {
+			"*": [
+				"../node_modules/*/src/index",
+				"../node_modules/*/lib/index",
+				"../node_modules/*/index",
+				"../node_modules/*/dist/index",
+				"../node_modules/*"
+			]
+		},
 		"typeRoots": ["lua-types/5.3"],
 		"types": [
 			"@types/jest",
@@ -24,8 +36,9 @@
 			"war3-types/core/commonai",
 			"war3-types/core/polyfill",
 			"war3-types/special/w3ts"
-		]
+		],
+		"noEmit": true
 	},
 	"include": ["src"],
-	"exclude": ["node_modules", "__lua__"]
+	"exclude": ["node_modules", "src/test"]
 }
