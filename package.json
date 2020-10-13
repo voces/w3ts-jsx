@@ -1,10 +1,10 @@
 {
   "name": "w3ts-jsx",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "JSX for Warcraft III maps",
   "author": "verit",
   "license": "ISC",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "prepublishOnly": "npm run build",
@@ -18,8 +18,8 @@
     "w3ts": "^2.1.2"
   },
   "dependencies": {
-    "basic-pragma": "^1.0.2",
-    "tstl-jsx": "^1.0.1"
+    "basic-pragma": "^1.0.3",
+    "tstl-jsx": "^2.0.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.11.5",
@@ -39,7 +39,6 @@
     "war3-types": "^1.0.2"
   },
   "files": [
-    "dist/",
     "src/"
   ],
   "repository": {

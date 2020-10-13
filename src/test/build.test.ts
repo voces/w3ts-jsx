@@ -2,8 +2,7 @@ import * as tstl from "typescript-to-lua";
 import { readFileSync } from "fs";
 
 it("works", async () => {
-	// const result = tstl.transpileProject("src/test/test.tsconfig.json");
-	const result = tstl.transpileProject("src/test/test.tsconfig.json");
+	const result = tstl.transpileProject("src/test/tsconfig.test.json");
 
 	expect(result.diagnostics).toHaveLength(0);
 

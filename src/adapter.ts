@@ -1,6 +1,6 @@
 /** @noSelfInFile **/
 
-import { Adapter } from "./basic-pragma/adapter";
+import { Adapter } from "../node_modules/basic-pragma/src/index";
 
 // https://wc3modding.info/pages/jass-documentation-database/class/functions/file/common.j/
 // https://discordapp.com/channels/178569180625240064/311662737015046144/764384452867784704
