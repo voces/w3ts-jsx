@@ -1,6 +1,6 @@
 {
   "name": "w3ts-jsx",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "JSX for Warcraft III maps",
   "author": "verit",
   "license": "ISC",
@@ -17,6 +17,9 @@
     "typescript": "^3.9.7",
     "typescript-to-lua": "^0.35.0"
   },
+  "dependencies": {
+    "tstl-jsx": "^2.0.0"
+  },
   "devDependencies": {
     "@babel/preset-env": "^7.11.5",
     "@babel/preset-typescript": "^7.10.4",
@@ -24,18 +27,17 @@
     "@types/jest": "^26.0.14",
     "@typescript-eslint/eslint-plugin": "^4.3.0",
     "basic-pragma": "^1.0.3",
+    "eslint": "^7.10.0",
     "eslint-config-verit": "^3.2.1",
     "eslint-plugin-prettier": "^3.1.4",
-    "eslint": "^7.10.0",
     "fs-extra": "^9.0.1",
     "jest": "^26.4.2",
     "lua-types": "^2.8.0",
     "prettier": "^2.1.2",
     "ts-jest": "^26.4.1",
     "ts-node": "^9.0.0",
-    "tstl-jsx": "^2.0.0",
-    "typescript-to-lua": "^0.35.0",
     "typescript": "^3.9.7",
+    "typescript-to-lua": "^0.35.0",
     "war3-types": "^1.0.2"
   },
   "files": [
