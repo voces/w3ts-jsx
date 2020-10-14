@@ -10,7 +10,7 @@ Add JSX to your WC3 maps!
 | Lifecycle methods | ❌ |
 | Functional components | ✔️ |
 | Hooks | ✔️ |
-| Fragments | ❌ |
+| [Fragments](https://github.com/voces/w3ts-jsx/issues/2) | ❌ |
 | [Box model](https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/The_box_model) | ❌ |
 
 ## Usage
@@ -41,7 +41,7 @@ npm install -S w3ts-jsx
 }
 ```
 3. Use JSX
-```ts
+```tsx
 // Import using a relative URL to for path consistency with Typescript-to-Lua
 import * as React from "../node_modules/w3ts-jsx/dist/src/index";
 
