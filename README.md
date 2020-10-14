@@ -5,6 +5,7 @@ Add JSX to your WC3 maps!
 | Feature | Status |
 | --- | --- |
 | JSX | ✔️ |
+| Base frame types | ❌ |
 | Class components | ✔️ |
 | Lifecycle methods | ❌ |
 | Functional components | ✔️ |
@@ -41,6 +42,7 @@ npm install -S w3ts-jsx
 ```
 3. Use JSX
 ```ts
+// Import using a relative URL to for path consistency with Typescript-to-Lua
 import * as React from "../node_modules/w3ts-jsx/dist/src/index";
 
 const App = (): React.Node => (
