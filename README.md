@@ -5,7 +5,7 @@ Add JSX to your WC3 maps!
 | Feature | Status |
 | --- | --- |
 | JSX | ✔️ |
-| Base frame types | ❌ |
+| [Base frame types](https://github.com/voces/w3ts-jsx/issues/1) | ❌ |
 | Class components | ✔️ |
 | Lifecycle methods | ❌ |
 | Functional components | ✔️ |
@@ -48,7 +48,6 @@ import * as React from "../node_modules/w3ts-jsx/dist/src/index";
 const App = (): React.Node => (
     <frame
         typeName="BUTTON"
-        name="FaceButton"
         inherits="ScoreScreenTabButtonTemplate"
         absPosition={[{ point: FRAMEPOINT_CENTER, x: 0.4, y: 0.3 }]}
         size={{ width: 0.05, height: 0.05 }}
@@ -56,7 +55,6 @@ const App = (): React.Node => (
     >
         <frame
             typeName="BACKDROP"
-            name="FaceButtonIcon"
             position={["parent"]}
             texture={{
                 texFile: "ReplaceableTextures\\CommandButtons\\BTNSelectHeroOn",
