@@ -1,48 +1,45 @@
 {
   "name": "w3ts-jsx",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "JSX for Warcraft III maps",
   "author": "verit",
   "license": "ISC",
-  "main": "src/index.ts",
+  "main": "dist/src/index.ts",
   "scripts": {
-    "build": "tsc --project tsconfig.json",
+    "build": "ts-node scripts/build.ts",
     "prepublishOnly": "npm run build",
+    "test-debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "test-lint": "eslint src --ext .js,.ts,.tsx",
     "test": "jest",
-    "test-debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
+    "typecheck": "tsc --project tsconfig.json"
   },
   "peerDependencies": {
     "typescript": "^3.9.7",
-    "typescript-to-lua": "^0.35.0",
-    "w3ts": "^2.1.2"
-  },
-  "dependencies": {
-    "basic-pragma": "^1.0.3",
-    "tstl-jsx": "^2.0.0"
+    "typescript-to-lua": "^0.35.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.11.5",
     "@babel/preset-typescript": "^7.10.4",
+    "@types/fs-extra": "^9.0.2",
     "@types/jest": "^26.0.14",
     "@typescript-eslint/eslint-plugin": "^4.3.0",
-    "eslint": "^7.10.0",
+    "basic-pragma": "^1.0.3",
     "eslint-config-verit": "^3.2.1",
     "eslint-plugin-prettier": "^3.1.4",
+    "eslint": "^7.10.0",
+    "fs-extra": "^9.0.1",
     "jest": "^26.4.2",
     "lua-types": "^2.8.0",
     "prettier": "^2.1.2",
     "ts-jest": "^26.4.1",
     "ts-node": "^9.0.0",
-    "typescript": "^3.9.7",
+    "tstl-jsx": "^2.0.0",
     "typescript-to-lua": "^0.35.0",
+    "typescript": "^3.9.7",
     "war3-types": "^1.0.2"
   },
   "files": [
-	"src/adapter.ts",
-	"src/index.ts",
-	"src/transformers.ts",
-	"src/types.d.ts"
+    "dist"
   ],
   "repository": {
     "type": "git",
