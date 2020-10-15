@@ -38,10 +38,7 @@ type CommonFrameProps = {
 	level?: number;
 	maxLength?: number;
 	minMaxValue?: { min?: number; max?: number };
-	model?: { modelFile?: string; cameraIndex?: number };
 	scale?: number;
-	spriteAnimate?: { primaryProp: number; flags: number };
-	stepSize?: number;
 	text?: string;
 	textAlignment?: { vert: textaligntype; horz: textaligntype };
 	textColor?: number;
@@ -54,14 +51,18 @@ type CommonFrameProps = {
 	absPosition?: AbsPos[] | null;
 };
 
+// Props shared by all simple frames
 type SimpleFrameProps = CommonFrameProps;
 
+// Props shared by all frames that are not simple frames
 type ComplexFrameProps = CommonFrameProps & {
 	tooltip?: framehandle | null;
 };
 
 type FrameProps = ComplexFrameProps & {
-	// events
+	model?: { modelFile?: string; cameraIndex?: number };
+	spriteAnimate?: { primaryProp: number; flags: number };
+	stepSize?: number;
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -83,7 +84,6 @@ type FrameProps = ComplexFrameProps & {
 type BackdropProps = ComplexFrameProps;
 
 type ButtonProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -94,7 +94,6 @@ type ButtonProps = ComplexFrameProps & {
 };
 
 type ChatDisplayProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -105,7 +104,6 @@ type ChatDisplayProps = ComplexFrameProps & {
 };
 
 type CheckboxProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -118,7 +116,6 @@ type CheckboxProps = ComplexFrameProps & {
 };
 
 type ControlProps = ComplexFrameProps & {
-	// events
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
 	onMouseUp?: Handler;
@@ -126,13 +123,11 @@ type ControlProps = ComplexFrameProps & {
 };
 
 type DialogProps = ComplexFrameProps & {
-	// events
 	onDialogCancel?: Handler;
 	onDialogAccept?: Handler;
 };
 
 type EditBoxProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -147,7 +142,6 @@ type EditBoxProps = ComplexFrameProps & {
 type ContainerProps = ComplexFrameProps;
 
 type GlueButtonProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -157,7 +151,6 @@ type GlueButtonProps = ComplexFrameProps & {
 };
 
 type GlueCheckboxProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -170,7 +163,6 @@ type GlueCheckboxProps = ComplexFrameProps & {
 };
 
 type GlueEditBoxProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -183,7 +175,6 @@ type GlueEditBoxProps = ComplexFrameProps & {
 };
 
 type GluePopupMenuProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -193,7 +184,6 @@ type GluePopupMenuProps = ComplexFrameProps & {
 };
 
 type GlueTextButtonProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -206,7 +196,6 @@ type GlueTextButtonProps = ComplexFrameProps & {
 type HighlightProps = ComplexFrameProps;
 
 type ListBoxProps = ComplexFrameProps & {
-	// events
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
 	onMouseUp?: Handler;
@@ -215,7 +204,6 @@ type ListBoxProps = ComplexFrameProps & {
 };
 
 type MenuProps = ComplexFrameProps & {
-	// events
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
 	onMouseUp?: Handler;
@@ -224,7 +212,7 @@ type MenuProps = ComplexFrameProps & {
 };
 
 type ModelProps = ComplexFrameProps & {
-	// events
+	model?: { modelFile?: string; cameraIndex?: number };
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
 	onMouseUp?: Handler;
@@ -233,7 +221,6 @@ type ModelProps = ComplexFrameProps & {
 };
 
 type PopupMenuProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -243,7 +230,7 @@ type PopupMenuProps = ComplexFrameProps & {
 };
 
 type ScrollbarProps = ComplexFrameProps & {
-	// events
+	stepSize?: number;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
 	onMouseUp?: Handler;
@@ -254,7 +241,6 @@ type ScrollbarProps = ComplexFrameProps & {
 
 type SimpleButtonProps = SimpleFrameProps & {
 	tooltip?: framehandle | null;
-	// events
 	onClick?: Handler;
 };
 
@@ -265,7 +251,6 @@ type SimpleContainerProps = SimpleFrameProps;
 type SimpleStatusBarProps = SimpleFrameProps;
 
 type SlashChatboxProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -278,7 +263,7 @@ type SlashChatboxProps = ComplexFrameProps & {
 };
 
 type SliderProps = ComplexFrameProps & {
-	// events
+	stepSize?: number;
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -290,12 +275,11 @@ type SliderProps = ComplexFrameProps & {
 };
 
 type SpriteProps = ComplexFrameProps & {
-	// events
+	spriteAnimate?: { primaryProp: number; flags: number };
 	onSpriteAnimUpdate?: Handler;
 };
 
 type TextProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -306,7 +290,6 @@ type TextProps = ComplexFrameProps & {
 };
 
 type TextAreaProps = ComplexFrameProps & {
-	// events
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
 	onMouseUp?: Handler;
@@ -315,7 +298,6 @@ type TextAreaProps = ComplexFrameProps & {
 };
 
 type TextButtonProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
@@ -326,7 +308,6 @@ type TextButtonProps = ComplexFrameProps & {
 };
 
 type TimerTextProps = ComplexFrameProps & {
-	// events
 	onClick?: Handler;
 	onMouseEnter?: Handler;
 	onMouseLeave?: Handler;
