@@ -5,7 +5,7 @@ Add JSX to your WC3 maps!
 | Feature | Status |
 | --- | --- |
 | JSX | ✔️ |
-| [Base frame types](https://github.com/voces/w3ts-jsx/issues/1) | ❌ |
+| [Base frame types](https://github.com/voces/w3ts-jsx/issues/1) | 🚧 |
 | Class components | ✔️ |
 | Lifecycle methods | ❌ |
 | Functional components | ✔️ |
