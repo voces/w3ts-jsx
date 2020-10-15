@@ -2652,6 +2652,8 @@ setProp = function(frame, prop, value, oldValue)
     end
     ::____switch21_end::
 end
+local typeNames = {\\"backdrop\\", \\"button\\", \\"chatdisplay\\", \\"checkbox\\", \\"control\\", \\"dialog\\", \\"editbox\\", \\"gluebutton\\", \\"gluecheckbox\\", \\"glueeditbox\\", \\"gluepopupmenu\\", \\"gluetextbutton\\", \\"highlight\\", \\"listbox\\", \\"menu\\", \\"model\\", \\"popupmenu\\", \\"scrollbar\\", \\"slashchatbox\\", \\"slider\\", \\"sprite\\", \\"text\\", \\"textarea\\", \\"textbutton\\", \\"timertext\\"}
+local simpleTypeNames = {\\"simple-button\\", \\"simple-checkbox\\", \\"simple-statusbar\\"}
 ____exports.adapter = {
     createFrame = function(____, jsxType, parentFrame, props)
         local frame
@@ -2663,12 +2665,26 @@ ____exports.adapter = {
         if priority == nil then
             priority = frameDefaults.priority
         end
-        local typeName = props.typeName
         local inherits = props.inherits
         local isSimple = props.isSimple
         local context = props.context
         if context == nil then
             context = frameDefaults.context
+        end
+        local typeName = props.typeName
+        if (typeName == nil) and __TS__ArrayIncludes(typeNames, jsxType) then
+            typeName = string.upper(jsxType)
+        end
+        if (typeName == nil) and __TS__ArrayIncludes(simpleTypeNames, jsxType) then
+            typeName = string.upper(
+                __TS__StringReplace(jsxType, \\"-\\", \\"\\")
+            )
+        end
+        if (typeName == nil) and (jsxType == \\"container\\") then
+            typeName = \\"FRAME\\"
+        end
+        if (typeName == nil) and (jsxType == \\"simple-container\\") then
+            typeName = \\"SIMPLEFRAME\\"
         end
         if (function(____lhs)
             if ____lhs == nil then

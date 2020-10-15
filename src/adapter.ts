@@ -410,6 +410,40 @@ const setProp = (
 	}
 };
 
+const typeNames = [
+	"backdrop",
+	"button",
+	"chatdisplay",
+	"checkbox",
+	"control",
+	"dialog",
+	"editbox",
+	"gluebutton",
+	"gluecheckbox",
+	"glueeditbox",
+	"gluepopupmenu",
+	"gluetextbutton",
+	"highlight",
+	"listbox",
+	"menu",
+	"model",
+	"popupmenu",
+	"scrollbar",
+	"slashchatbox",
+	"slider",
+	"sprite",
+	"text",
+	"textarea",
+	"textbutton",
+	"timertext",
+];
+
+const simpleTypeNames = [
+	"simple-button",
+	"simple-checkbox",
+	"simple-statusbar",
+];
+
 export const adapter: Adapter<framehandle> = {
 	createFrame: (
 		jsxType: string,
@@ -417,14 +451,29 @@ export const adapter: Adapter<framehandle> = {
 		props: FrameProps,
 	) => {
 		let frame: framehandle;
+
 		const {
 			name = frameDefaults.name,
 			priority = frameDefaults.priority,
-			typeName,
 			inherits,
 			isSimple,
 			context = frameDefaults.context,
 		} = props;
+
+		let typeName = props.typeName;
+
+		if (typeName == null && typeNames.includes(jsxType))
+			typeName = jsxType.toUpperCase();
+
+		if (typeName == null && simpleTypeNames.includes(jsxType))
+			typeName = jsxType.replace("-", "").toUpperCase();
+
+		// frame is both our base component and a typeName; we expose it as
+		// container
+		if (typeName == null && jsxType === "container") typeName = "FRAME";
+		if (typeName == null && jsxType === "simple-container")
+			typeName = "SIMPLEFRAME";
+
 		if (isSimple ?? jsxType === "simple-frame")
 			frame = BlzCreateSimpleFrame(name, parentFrame, context);
 		else if (typeName)
