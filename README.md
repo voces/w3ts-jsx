@@ -9,7 +9,7 @@ Add JSX to your WC3 maps!
 | Class components | ✔️ |
 | Lifecycle methods | ❌ |
 | Functional components | ✔️ |
-| Hooks | ✔️ |
+| Hooks | 🚧 |
 | [Fragments](https://github.com/voces/w3ts-jsx/issues/2) | ❌ |
 | [Box model](https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/The_box_model) | ❌ |
 
