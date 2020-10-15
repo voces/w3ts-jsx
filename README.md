@@ -46,21 +46,19 @@ npm install -S w3ts-jsx
 import * as React from "../node_modules/w3ts-jsx/dist/src/index";
 
 const App = (): React.Node => (
-    <frame
-        typeName="BUTTON"
+    <button
         inherits="ScoreScreenTabButtonTemplate"
         absPosition={[{ point: FRAMEPOINT_CENTER, x: 0.4, y: 0.3 }]}
         size={{ width: 0.05, height: 0.05 }}
         onClick={() => print("Button Clicked")}
     >
-        <frame
-            typeName="BACKDROP"
+        <backdrop
             position={["parent"]}
             texture={{
                 texFile: "ReplaceableTextures\\CommandButtons\\BTNSelectHeroOn",
             }}
         />
-    </frame>
+    </button>
 );
 
 React.render(<App />, BlzGetOriginFrame(ORIGIN_FRAME_GAME_UI, 0));
