@@ -447,9 +447,10 @@ const simpleTypeNames = [
 export const adapter: Adapter<framehandle> = {
 	createFrame: (
 		jsxType: string,
-		parentFrame: framehandle,
+		parentFrame: framehandle | undefined,
 		props: FrameProps,
 	) => {
+		if (!parentFrame) throw "expected parent frame";
 		let frame: framehandle;
 
 		const {
