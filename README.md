@@ -4,14 +4,14 @@ Add JSX to your WC3 maps!
 ## Features
 | Feature | Status |
 | --- | --- |
-| JSX | ✔️ |
-| [Base frame types](https://github.com/voces/w3ts-jsx/issues/1) | 🚧 |
-| Class components | ✔️ |
-| Lifecycle methods | ❌ |
-| Functional components | ✔️ |
-| Hooks | 🚧 |
-| [Fragments](https://github.com/voces/w3ts-jsx/issues/2) | ❌ |
 | [Box model](https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/The_box_model) | ❌ |
+| [Base frame types](https://github.com/voces/w3ts-jsx/issues/1) | ❌ |
+| Lifecycle methods | ❌ |
+| JSX | ✔️ |
+| Class components | ✔️ |
+| Functional components | ✔️ |
+| Hooks | ✔️ |
+| [Fragments](https://github.com/voces/w3ts-jsx/issues/2) | ✔️ |
 
 ## Usage
 1. Install the dependency.
