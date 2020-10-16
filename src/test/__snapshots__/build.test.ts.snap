@@ -1653,6 +1653,9 @@ end,
 local ____exports = {}
 local ____adapter = require(\\"node_modules.basic-pragma.src.adapter\\")
 local adapter = ____adapter.adapter
+local ____element = require(\\"node_modules.basic-pragma.src.element\\")
+local isChild = ____element.isChild
+local processChildren = ____element.processChildren
 local ____common = require(\\"node_modules.basic-pragma.src.common\\")
 local TEXT_ELEMENT = ____common.TEXT_ELEMENT
 local cleanupFrames, reconcileChildren, instantiate, functionalComponentClasses, isClass, createPublicInstance, updateInstance
@@ -1661,6 +1664,9 @@ function ____exports.reconcile(parentFrame, instance, vnode)
         local ____try, err, ____returnValue = pcall(
             function()
                 if not instance then
+                    if not vnode then
+                        return true, nil
+                    end
                     return true, instantiate(vnode, parentFrame)
                 elseif not vnode then
                     cleanupFrames(instance)
@@ -1673,30 +1679,17 @@ function ____exports.reconcile(parentFrame, instance, vnode)
                     local instanceOfSameType = instance
                     if type(vnode.type) == \\"string\\" then
                         adapter:updateFrameProperties(instance.hostFrame, instance.vnode.props, vnode.props)
-                        instance.childInstances = reconcileChildren(instance, vnode)
-                        instanceOfSameType.vnode = vnode
-                        return true, instanceOfSameType
-                    elseif instanceOfSameType.publicInstance then
-                        instanceOfSameType.publicInstance.props = vnode.props
-                        ____exports.hooks.beforeRender(instanceOfSameType.publicInstance)
-                        local childElement = instanceOfSameType.publicInstance:render(vnode.props)
-                        if not childElement then
-                            error(\\"Failed to render child\\", 0)
-                        end
-                        local oldChildInstance = instanceOfSameType.childInstance
-                        local childInstance = ____exports.reconcile(parentFrame, oldChildInstance, childElement)
-                        if not childInstance then
-                            error(\\"Failed to update composite instance\\", 0)
-                        end
-                        instanceOfSameType.hostFrame = childInstance.hostFrame
-                        instanceOfSameType.childInstance = childInstance
-                        instanceOfSameType.vnode = vnode
-                        return true, instanceOfSameType
-                    else
-                        error(\\"Reconciler catch all error\\", 0)
+                        instanceOfSameType.childInstances = reconcileChildren(instanceOfSameType, vnode)
+                    elseif instanceOfSameType.component then
+                        instanceOfSameType.component.props = vnode.props
+                        ____exports.hooks.beforeRender(instanceOfSameType.component)
+                        local rendered = instanceOfSameType.component:render(vnode.props)
+                        local children = (isChild(rendered) and ((rendered and ({rendered})) or ({}))) or rendered
+                        instanceOfSameType.childInstances = reconcileChildren(instanceOfSameType, vnode, children)
                     end
+                    instanceOfSameType.vnode = vnode
+                    return true, instanceOfSameType
                 end
-                return true, nil
             end
         )
         if not ____try then
@@ -1718,15 +1711,15 @@ function cleanupFrames(instance)
             end
         end
     end
-    if instance.childInstance then
-        cleanupFrames(instance.childInstance)
-    end
     adapter:cleanupFrame(instance.hostFrame)
 end
-function reconcileChildren(instance, vnode)
+function reconcileChildren(instance, vnode, children)
+    if children == nil then
+        children = vnode.props.children
+    end
     local hostFrame = instance.hostFrame
     local childInstances = instance.childInstances
-    local nextChildElements = vnode.props.children or ({})
+    local nextChildElements = processChildren(children or ({}))
     local newChildInstances = {}
     local count = math.max(#childInstances, #nextChildElements)
     do
@@ -1752,22 +1745,26 @@ function instantiate(vnode, parentFrame)
             error(\\"Cannot create inline text, yet\\", 0)
         end
         local frame = adapter:createFrame(____type, parentFrame, props)
-        local childElements = props.children or ({})
+        local childElements = processChildren(props.children or ({}))
         local childInstances = __TS__ArrayMap(
             childElements,
             function(____, child) return instantiate(child, frame) end
         )
-        local instance = {hostFrame = frame, vnode = vnode, childInstances = childInstances, childInstance = nil}
+        local instance = {hostFrame = frame, vnode = vnode, childInstances = childInstances}
         return instance
     else
-        local instance = {}
-        local publicInstance = createPublicInstance(vnode, instance)
-        ____exports.hooks.beforeRender(publicInstance)
-        local childElement = publicInstance:render(props)
-        local childInstance = (childElement and instantiate(childElement, parentFrame)) or nil
-        local hostFrame = childInstance.hostFrame
-        local updateProps = {hostFrame = hostFrame, vnode = vnode, childInstance = childInstance, publicInstance = publicInstance}
-        __TS__ObjectAssign(instance, updateProps)
+        local instance = {vnode = vnode}
+        instance.component = createPublicInstance(vnode, instance)
+        ____exports.hooks.beforeRender(instance.component)
+        local rendered = instance.component:render(props)
+        local childElements = (isChild(rendered) and ({rendered})) or rendered
+        instance.childInstances = __TS__ArrayMap(
+            __TS__ArrayFilter(
+                childElements,
+                function(____, child) return (type(child) == \\"table\\") and (child ~= nil) end
+            ),
+            function(____, child) return instantiate(child, parentFrame) end
+        )
         return instance
     end
 end
@@ -1803,23 +1800,18 @@ function createPublicInstance(vnode, internalInstance)
     return publicInstance
 end
 function updateInstance(internalInstance)
-    local parentDom = adapter:getParent(internalInstance.hostFrame)
     local vnode = internalInstance.vnode
-    if parentDom then
-        ____exports.reconcile(parentDom, internalInstance, vnode)
-    else
-        error(\\"Tried to reconcile instance with no dom.parentDom\\", 0)
-    end
+    ____exports.reconcile(nil, internalInstance, vnode)
 end
 ____exports.hooks = {
     beforeRender = function(instance)
     end
 }
-local rootInstance = nil
+local containerMap = __TS__New(WeakMap)
 function ____exports.render(vnode, container)
-    local prevInstance = rootInstance
+    local prevInstance = containerMap:get(container) or nil
     local nextInstance = ____exports.reconcile(container, prevInstance, vnode)
-    rootInstance = nextInstance
+    containerMap:set(containerMap, nextInstance)
 end
 functionalComponentClasses = __TS__New(WeakMap)
 local isLua = _G._VERSION ~= nil
@@ -1871,13 +1863,7 @@ function ____exports.createElement(____type, config, children)
         key = nil
     end
     local props = __TS__ObjectRest(____, {key = true, props = true})
-    local flattenedChildren = __TS__ArrayMap(
-        __TS__ArrayFilter(
-            __TS__ArrayFlat(((children and (#children > 0)) and children) or ({})),
-            function(____, c) return ((c ~= nil) and (type(c) ~= \\"boolean\\")) and ((type(c) == \\"string\\") or (not (not c.type))) end
-        ),
-        function(____, c) return ((type(c) == \\"string\\") and createTextElement(c)) or c end
-    )
+    local flattenedChildren = ____exports.processChildren(((children and (#children > 0)) and children) or ({}))
     if #flattenedChildren > 0 then
         props.children = flattenedChildren
     else
@@ -1892,6 +1878,14 @@ end
 function createTextElement(value)
     return ____exports.createElement(TEXT_ELEMENT, {nodeValue = value})
 end
+____exports.isChild = function(obj) return (((type(obj) == \\"table\\") and (obj ~= nil)) and (obj.type ~= nil)) and (obj.props ~= nil) end
+____exports.processChildren = function(children) return __TS__ArrayMap(
+    __TS__ArrayFilter(
+        __TS__ArrayFlat(children),
+        function(____, c) return ((c ~= nil) and (type(c) ~= \\"boolean\\")) and ((type(c) == \\"string\\") or (not (not c.type))) end
+    ),
+    function(____, c) return ((type(c) == \\"string\\") and createTextElement(c)) or c end
+) end
 local EMPTY_OBJECT = {}
 ____exports.Fragment = function(props) return props.children end
 return ____exports
@@ -2656,6 +2650,9 @@ local typeNames = {\\"backdrop\\", \\"button\\", \\"chatdisplay\\", \\"checkbox\
 local simpleTypeNames = {\\"simple-button\\", \\"simple-checkbox\\", \\"simple-statusbar\\"}
 ____exports.adapter = {
     createFrame = function(____, jsxType, parentFrame, props)
+        if not parentFrame then
+            error(\\"expected parent frame\\", 0)
+        end
         local frame
         local name = props.name
         if name == nil then

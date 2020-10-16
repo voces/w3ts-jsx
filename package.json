@@ -1,6 +1,6 @@
 {
   "name": "w3ts-jsx",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "JSX for Warcraft III maps",
   "author": "verit",
   "license": "ISC",
@@ -26,7 +26,7 @@
     "@types/fs-extra": "^9.0.2",
     "@types/jest": "^26.0.14",
     "@typescript-eslint/eslint-plugin": "^4.3.0",
-    "basic-pragma": "^1.0.3",
+    "basic-pragma": "^2.0.0",
     "eslint": "^7.10.0",
     "eslint-config-verit": "^3.2.1",
     "eslint-plugin-prettier": "^3.1.4",
