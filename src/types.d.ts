@@ -1,9 +1,11 @@
 /** @noSelfInFile **/
 
+type RelativeFrame = framehandle | "previous" | "parent" | "children";
+
 type Pos =
 	| {
 			point: framepointtype;
-			relative: framehandle | "previous" | "parent";
+			relative: RelativeFrame;
 			relativePoint: framepointtype;
 			x?: number;
 			y?: number;

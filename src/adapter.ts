@@ -1,6 +1,6 @@
 /** @noSelfInFile **/
 
-import { Adapter } from "../node_modules/basic-pragma/src/index";
+import { Adapter, render } from "../node_modules/basic-pragma/src/index";
 
 // https://wc3modding.info/pages/jass-documentation-database/class/functions/file/common.j/
 // https://discordapp.com/channels/178569180625240064/311662737015046144/764384452867784704
@@ -111,9 +111,22 @@ const setEventProp = (
 	triggerMap.set(val, t);
 };
 
+const firstChildRelativePoints = [
+	FRAMEPOINT_TOPLEFT,
+	FRAMEPOINT_TOP,
+	FRAMEPOINT_LEFT,
+];
+
+const lastChildRelativePoints = [
+	FRAMEPOINT_RIGHT,
+	FRAMEPOINT_BOTTOM,
+	FRAMEPOINT_BOTTOMRIGHT,
+];
+
 const resolveRelative = (
 	frame: framehandle,
-	relative: framehandle | "previous" | "parent",
+	relative: RelativeFrame,
+	relativePoint: framepointtype,
 ) => {
 	if (typeof relative !== "string") return relative;
 
@@ -132,6 +145,15 @@ const resolveRelative = (
 			if (index > 0) return BlzFrameGetChild(parent, index - 1);
 			return null;
 		}
+		case "children":
+			if (firstChildRelativePoints.includes(relativePoint))
+				return BlzFrameGetChild(frame, 0);
+			if (lastChildRelativePoints.includes(relativePoint))
+				return BlzFrameGetChild(
+					frame,
+					BlzFrameGetChildrenCount(frame) - 1,
+				);
+			throw `When using relative=children, expected relativePoint to be in ${firstChildRelativePoints} or ${lastChildRelativePoints}`;
 		default:
 			absurd(relative);
 	}
@@ -145,8 +167,31 @@ const previousToParentPoint = (relative: framepointtype) => {
 		// Div
 		case FRAMEPOINT_BOTTOM:
 			return FRAMEPOINT_TOP;
+
+		case FRAMEPOINT_BOTTOMLEFT:
+			return FRAMEPOINT_TOPLEFT;
+		case FRAMEPOINT_BOTTOMRIGHT:
+			return FRAMEPOINT_TOPRIGHT;
 	}
 };
+
+const tooltipMap = new WeakMap<framehandle, framehandle>();
+
+let scale = 1600 * 1.25;
+/**
+ * Sets the UI scale for pixel measurements. Defaults to 1600.
+ */
+export const setPixelScale = (newScale: number): void => {
+	scale = newScale * 1.25;
+};
+
+/**
+ * Allows usage of Blizzard sizes (where 0.8 fills the 5:4 box width, 0.6 the
+ * 5:4 box height) and pixels (where 1600 is the full width and 1200 is the
+ * full height)
+ */
+const smartSize = (size: number) =>
+	size < 1 && size > -1 ? size : size / scale;
 
 const setProp = (
 	frame: framehandle,
@@ -216,8 +261,8 @@ const setProp = (
 		case "size": {
 			BlzFrameSetSize(
 				frame,
-				val.width ?? frameDefaults.size.width,
-				val.height ?? frameDefaults.size.height,
+				smartSize(val.width ?? frameDefaults.size.width),
+				smartSize(val.height ?? frameDefaults.size.height),
 			);
 			break;
 		}
@@ -226,7 +271,19 @@ const setProp = (
 			break;
 		}
 		case "tooltip": {
-			BlzFrameSetTooltip(frame, val);
+			const existingTooltip = tooltipMap.get(frame);
+			let tooltip;
+			if (existingTooltip) tooltip = existingTooltip;
+			else {
+				tooltip = adapter.createFrame(
+					"container",
+					BlzGetOriginFrame(ORIGIN_FRAME_GAME_UI, 0),
+					{ name: "Tooltip" },
+				);
+				tooltipMap.set(frame, tooltip);
+			}
+			render(val, tooltip);
+			BlzFrameSetTooltip(frame, tooltip);
 			break;
 		}
 		case "font": {
@@ -276,6 +333,7 @@ const setProp = (
 						const relative = resolveRelative(
 							frame,
 							position.relative,
+							position.relativePoint,
 						);
 						if (relative)
 							BlzFrameSetPoint(
@@ -283,13 +341,18 @@ const setProp = (
 								position.point,
 								relative,
 								position.relativePoint,
-								position.x ?? 0,
-								position.y ?? 0,
+								smartSize(position.x ?? 0),
+								smartSize(position.y ?? 0),
 							);
 						// We used `previous` and we're the first child
 						else {
 							const parentRelative = previousToParentPoint(
 								position.relativePoint,
+							);
+							print(
+								"parentRelative",
+								position.relativePoint,
+								parentRelative,
 							);
 							if (parentRelative)
 								BlzFrameSetPoint(
@@ -297,8 +360,8 @@ const setProp = (
 									position.point,
 									BlzFrameGetParent(frame),
 									parentRelative,
-									position.x ?? 0,
-									position.y ?? 0,
+									smartSize(position.x ?? 0),
+									smartSize(position.y ?? 0),
 								);
 						}
 					}
@@ -312,8 +375,8 @@ const setProp = (
 						BlzFrameSetAbsPoint(
 							frame,
 							absPosition.point,
-							absPosition.x ?? 0,
-							absPosition.y ?? 0,
+							smartSize(absPosition.x ?? 0),
+							smartSize(absPosition.y ?? 0),
 						);
 			break;
 		}
@@ -451,7 +514,6 @@ export const adapter: Adapter<framehandle> = {
 		props: FrameProps,
 	) => {
 		if (!parentFrame) throw "expected parent frame";
-		let frame: framehandle;
 
 		const {
 			name = frameDefaults.name,
@@ -476,19 +538,18 @@ export const adapter: Adapter<framehandle> = {
 			typeName = "SIMPLEFRAME";
 
 		if (isSimple ?? jsxType === "simple-frame")
-			frame = BlzCreateSimpleFrame(name, parentFrame, context);
-		else if (typeName)
-			frame = BlzCreateFrameByType(
+			return BlzCreateSimpleFrame(name, parentFrame, context);
+
+		if (typeName)
+			return BlzCreateFrameByType(
 				typeName,
 				name,
 				parentFrame,
 				inherits ?? "",
 				context,
 			);
-		else frame = BlzCreateFrame(name, parentFrame, priority, context);
-		// This type casting is safe here, but may cause bugs later...
-		adapter.updateFrameProperties(frame, {}, props);
-		return frame;
+
+		return BlzCreateFrame(name, parentFrame, priority, context);
 	},
 
 	cleanupFrame: (frame: framehandle): void => BlzDestroyFrame(frame),

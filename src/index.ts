@@ -7,6 +7,8 @@ setAdapter(adapter);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Node<T = any> = VNode<T> | null;
 
+export { setPixelScale } from "./adapter";
+
 export {
 	useState,
 	createElement,
