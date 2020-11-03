@@ -1751,6 +1751,7 @@ function instantiate(vnode, parentFrame)
             function(____, child) return instantiate(child, frame) end
         )
         local instance = {hostFrame = frame, vnode = vnode, childInstances = childInstances}
+        adapter:updateFrameProperties(frame, {}, props)
         return instance
     else
         local instance = {vnode = vnode}
@@ -1982,6 +1983,8 @@ return ____exports
 end,
 [\\"src.adapter\\"] = function() require(\\"lualib_bundle\\");
 local ____exports = {}
+local ____index = require(\\"node_modules.basic-pragma.src.index\\")
+local render = ____index.render
 local frameDefaults = {name = \\"AnonymousFrame\\", priority = 0, isSimple = true, typeName = nil, inherits = \\"\\", context = 0, key = nil, alpha = 255, enabled = true, font = {fileName = \\"\\", height = 16, flags = 0}, level = 0, maxLength = 9999, minMaxValue = {min = -999999999, max = 999999999}, model = {modelFile = \\"\\", cameraIndex = 0}, scale = 1, spriteAnimate = {primaryProp = 0, flags = 0}, stepSize = 0, text = \\"\\", textAlignment = {vert = TEXT_JUSTIFY_TOP, horz = TEXT_JUSTIFY_LEFT}, textColor = 16777215, texture = {texFile = \\"\\", flag = 0, blend = true}, tooltip = nil, value = 0, vertexColor = 16777215, visible = true, position = nil, absPosition = nil, size = {width = 0.1, height = 0.1}, children = nil, onClick = nil, onMouseEnter = nil, onMouseLeave = nil, onMouseUp = nil, onMouseDown = nil, onMouseWheel = nil, onCheckboxChecked = nil, onCheckboxUnchecked = nil, onEditboxTextChanged = nil, onPopupmenuItemChanged = nil, onDoubleClick = nil, onSpriteAnimUpdate = nil, onSliderChanged = nil, onDialogCancel = nil, onDialogAccept = nil, onEditboxEnter = nil}
 local absurd
 absurd = function(value)
@@ -2028,8 +2031,10 @@ setEventProp = function(frame, event, val, oldValue)
     conditionMap:set(val, condition)
     triggerMap:set(val, t)
 end
+local firstChildRelativePoints = {FRAMEPOINT_TOPLEFT, FRAMEPOINT_TOP, FRAMEPOINT_LEFT}
+local lastChildRelativePoints = {FRAMEPOINT_RIGHT, FRAMEPOINT_BOTTOM, FRAMEPOINT_BOTTOMRIGHT}
 local resolveRelative
-resolveRelative = function(frame, relative)
+resolveRelative = function(frame, relative, relativePoint)
     if type(relative) ~= \\"string\\" then
         return relative
     end
@@ -2038,6 +2043,8 @@ resolveRelative = function(frame, relative)
         goto ____switch13_case_0
     elseif ____switch13 == \\"previous\\" then
         goto ____switch13_case_1
+    elseif ____switch13 == \\"children\\" then
+        goto ____switch13_case_2
     end
     goto ____switch13_case_default
     ::____switch13_case_0::
@@ -2066,6 +2073,22 @@ resolveRelative = function(frame, relative)
             return nil
         end
     end
+    ::____switch13_case_2::
+    do
+        if __TS__ArrayIncludes(firstChildRelativePoints, relativePoint) then
+            return BlzFrameGetChild(frame, 0)
+        end
+        if __TS__ArrayIncludes(lastChildRelativePoints, relativePoint) then
+            return BlzFrameGetChild(
+                frame,
+                BlzFrameGetChildrenCount(frame) - 1
+            )
+        end
+        error(
+            ((\\"When using relative=children, expected relativePoint to be in \\" .. tostring(firstChildRelativePoints)) .. \\" or \\") .. tostring(lastChildRelativePoints),
+            0
+        )
+    end
     ::____switch13_case_default::
     do
         absurd(relative)
@@ -2074,23 +2097,42 @@ resolveRelative = function(frame, relative)
 end
 local previousToParentPoint
 previousToParentPoint = function(relative)
-    local ____switch19 = relative
-    if ____switch19 == FRAMEPOINT_RIGHT then
-        goto ____switch19_case_0
-    elseif ____switch19 == FRAMEPOINT_BOTTOM then
-        goto ____switch19_case_1
+    local ____switch21 = relative
+    if ____switch21 == FRAMEPOINT_RIGHT then
+        goto ____switch21_case_0
+    elseif ____switch21 == FRAMEPOINT_BOTTOM then
+        goto ____switch21_case_1
+    elseif ____switch21 == FRAMEPOINT_BOTTOMLEFT then
+        goto ____switch21_case_2
+    elseif ____switch21 == FRAMEPOINT_BOTTOMRIGHT then
+        goto ____switch21_case_3
     end
-    goto ____switch19_end
-    ::____switch19_case_0::
+    goto ____switch21_end
+    ::____switch21_case_0::
     do
         return FRAMEPOINT_LEFT
     end
-    ::____switch19_case_1::
+    ::____switch21_case_1::
     do
         return FRAMEPOINT_TOP
     end
-    ::____switch19_end::
+    ::____switch21_case_2::
+    do
+        return FRAMEPOINT_TOPLEFT
+    end
+    ::____switch21_case_3::
+    do
+        return FRAMEPOINT_TOPRIGHT
+    end
+    ::____switch21_end::
 end
+local tooltipMap = __TS__New(WeakMap)
+local scale = 1600 * 1.25
+____exports.setPixelScale = function(newScale)
+    scale = newScale * 1.25
+end
+local smartSize
+smartSize = function(size) return (((size < 1) and (size > -1)) and size) or (size / scale) end
 local setProp
 setProp = function(frame, prop, value, oldValue)
     local val = (function(____lhs)
@@ -2101,121 +2143,121 @@ setProp = function(frame, prop, value, oldValue)
         end
     end)(value)
     local _oldValue = oldValue
-    local ____switch21 = prop
-    if ____switch21 == \\"text\\" then
-        goto ____switch21_case_0
-    elseif ____switch21 == \\"maxLength\\" then
-        goto ____switch21_case_1
-    elseif ____switch21 == \\"textColor\\" then
-        goto ____switch21_case_2
-    elseif ____switch21 == \\"texture\\" then
-        goto ____switch21_case_3
-    elseif ____switch21 == \\"model\\" then
-        goto ____switch21_case_4
-    elseif ____switch21 == \\"alpha\\" then
-        goto ____switch21_case_5
-    elseif ____switch21 == \\"level\\" then
-        goto ____switch21_case_6
-    elseif ____switch21 == \\"visible\\" then
-        goto ____switch21_case_7
-    elseif ____switch21 == \\"enabled\\" then
-        goto ____switch21_case_8
-    elseif ____switch21 == \\"vertexColor\\" then
-        goto ____switch21_case_9
-    elseif ____switch21 == \\"value\\" then
-        goto ____switch21_case_10
-    elseif ____switch21 == \\"size\\" then
-        goto ____switch21_case_11
-    elseif ____switch21 == \\"stepSize\\" then
-        goto ____switch21_case_12
-    elseif ____switch21 == \\"tooltip\\" then
-        goto ____switch21_case_13
-    elseif ____switch21 == \\"font\\" then
-        goto ____switch21_case_14
-    elseif ____switch21 == \\"minMaxValue\\" then
-        goto ____switch21_case_15
-    elseif ____switch21 == \\"scale\\" then
-        goto ____switch21_case_16
-    elseif ____switch21 == \\"spriteAnimate\\" then
-        goto ____switch21_case_17
-    elseif ____switch21 == \\"textAlignment\\" then
-        goto ____switch21_case_18
-    elseif ____switch21 == \\"position\\" then
-        goto ____switch21_case_19
-    elseif ____switch21 == \\"absPosition\\" then
-        goto ____switch21_case_20
-    elseif ____switch21 == \\"onClick\\" then
-        goto ____switch21_case_21
-    elseif ____switch21 == \\"onMouseEnter\\" then
-        goto ____switch21_case_22
-    elseif ____switch21 == \\"onMouseLeave\\" then
-        goto ____switch21_case_23
-    elseif ____switch21 == \\"onMouseUp\\" then
-        goto ____switch21_case_24
-    elseif ____switch21 == \\"onMouseDown\\" then
-        goto ____switch21_case_25
-    elseif ____switch21 == \\"onMouseWheel\\" then
-        goto ____switch21_case_26
-    elseif ____switch21 == \\"onCheckboxChecked\\" then
-        goto ____switch21_case_27
-    elseif ____switch21 == \\"onCheckboxUnchecked\\" then
-        goto ____switch21_case_28
-    elseif ____switch21 == \\"onEditboxTextChanged\\" then
-        goto ____switch21_case_29
-    elseif ____switch21 == \\"onPopupmenuItemChanged\\" then
-        goto ____switch21_case_30
-    elseif ____switch21 == \\"onDoubleClick\\" then
-        goto ____switch21_case_31
-    elseif ____switch21 == \\"onSpriteAnimUpdate\\" then
-        goto ____switch21_case_32
-    elseif ____switch21 == \\"onSliderChanged\\" then
-        goto ____switch21_case_33
-    elseif ____switch21 == \\"onDialogCancel\\" then
-        goto ____switch21_case_34
-    elseif ____switch21 == \\"onDialogAccept\\" then
-        goto ____switch21_case_35
-    elseif ____switch21 == \\"onEditboxEnter\\" then
-        goto ____switch21_case_36
-    elseif ____switch21 == \\"name\\" then
-        goto ____switch21_case_37
-    elseif ____switch21 == \\"priority\\" then
-        goto ____switch21_case_38
-    elseif ____switch21 == \\"isSimple\\" then
-        goto ____switch21_case_39
-    elseif ____switch21 == \\"typeName\\" then
-        goto ____switch21_case_40
-    elseif ____switch21 == \\"inherits\\" then
-        goto ____switch21_case_41
-    elseif ____switch21 == \\"children\\" then
-        goto ____switch21_case_42
-    elseif ____switch21 == \\"context\\" then
-        goto ____switch21_case_43
-    elseif ____switch21 == \\"key\\" then
-        goto ____switch21_case_44
+    local ____switch25 = prop
+    if ____switch25 == \\"text\\" then
+        goto ____switch25_case_0
+    elseif ____switch25 == \\"maxLength\\" then
+        goto ____switch25_case_1
+    elseif ____switch25 == \\"textColor\\" then
+        goto ____switch25_case_2
+    elseif ____switch25 == \\"texture\\" then
+        goto ____switch25_case_3
+    elseif ____switch25 == \\"model\\" then
+        goto ____switch25_case_4
+    elseif ____switch25 == \\"alpha\\" then
+        goto ____switch25_case_5
+    elseif ____switch25 == \\"level\\" then
+        goto ____switch25_case_6
+    elseif ____switch25 == \\"visible\\" then
+        goto ____switch25_case_7
+    elseif ____switch25 == \\"enabled\\" then
+        goto ____switch25_case_8
+    elseif ____switch25 == \\"vertexColor\\" then
+        goto ____switch25_case_9
+    elseif ____switch25 == \\"value\\" then
+        goto ____switch25_case_10
+    elseif ____switch25 == \\"size\\" then
+        goto ____switch25_case_11
+    elseif ____switch25 == \\"stepSize\\" then
+        goto ____switch25_case_12
+    elseif ____switch25 == \\"tooltip\\" then
+        goto ____switch25_case_13
+    elseif ____switch25 == \\"font\\" then
+        goto ____switch25_case_14
+    elseif ____switch25 == \\"minMaxValue\\" then
+        goto ____switch25_case_15
+    elseif ____switch25 == \\"scale\\" then
+        goto ____switch25_case_16
+    elseif ____switch25 == \\"spriteAnimate\\" then
+        goto ____switch25_case_17
+    elseif ____switch25 == \\"textAlignment\\" then
+        goto ____switch25_case_18
+    elseif ____switch25 == \\"position\\" then
+        goto ____switch25_case_19
+    elseif ____switch25 == \\"absPosition\\" then
+        goto ____switch25_case_20
+    elseif ____switch25 == \\"onClick\\" then
+        goto ____switch25_case_21
+    elseif ____switch25 == \\"onMouseEnter\\" then
+        goto ____switch25_case_22
+    elseif ____switch25 == \\"onMouseLeave\\" then
+        goto ____switch25_case_23
+    elseif ____switch25 == \\"onMouseUp\\" then
+        goto ____switch25_case_24
+    elseif ____switch25 == \\"onMouseDown\\" then
+        goto ____switch25_case_25
+    elseif ____switch25 == \\"onMouseWheel\\" then
+        goto ____switch25_case_26
+    elseif ____switch25 == \\"onCheckboxChecked\\" then
+        goto ____switch25_case_27
+    elseif ____switch25 == \\"onCheckboxUnchecked\\" then
+        goto ____switch25_case_28
+    elseif ____switch25 == \\"onEditboxTextChanged\\" then
+        goto ____switch25_case_29
+    elseif ____switch25 == \\"onPopupmenuItemChanged\\" then
+        goto ____switch25_case_30
+    elseif ____switch25 == \\"onDoubleClick\\" then
+        goto ____switch25_case_31
+    elseif ____switch25 == \\"onSpriteAnimUpdate\\" then
+        goto ____switch25_case_32
+    elseif ____switch25 == \\"onSliderChanged\\" then
+        goto ____switch25_case_33
+    elseif ____switch25 == \\"onDialogCancel\\" then
+        goto ____switch25_case_34
+    elseif ____switch25 == \\"onDialogAccept\\" then
+        goto ____switch25_case_35
+    elseif ____switch25 == \\"onEditboxEnter\\" then
+        goto ____switch25_case_36
+    elseif ____switch25 == \\"name\\" then
+        goto ____switch25_case_37
+    elseif ____switch25 == \\"priority\\" then
+        goto ____switch25_case_38
+    elseif ____switch25 == \\"isSimple\\" then
+        goto ____switch25_case_39
+    elseif ____switch25 == \\"typeName\\" then
+        goto ____switch25_case_40
+    elseif ____switch25 == \\"inherits\\" then
+        goto ____switch25_case_41
+    elseif ____switch25 == \\"children\\" then
+        goto ____switch25_case_42
+    elseif ____switch25 == \\"context\\" then
+        goto ____switch25_case_43
+    elseif ____switch25 == \\"key\\" then
+        goto ____switch25_case_44
     end
-    goto ____switch21_case_default
-    ::____switch21_case_0::
+    goto ____switch25_case_default
+    ::____switch25_case_0::
     do
         do
             BlzFrameSetText(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_1::
+    ::____switch25_case_1::
     do
         do
             BlzFrameSetTextSizeLimit(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_2::
+    ::____switch25_case_2::
     do
         do
             BlzFrameSetTextColor(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_3::
+    ::____switch25_case_3::
     do
         do
             BlzFrameSetTexture(
@@ -2242,10 +2284,10 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.blend)
             )
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_4::
+    ::____switch25_case_4::
     do
         do
             BlzFrameSetModel(
@@ -2265,89 +2307,106 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.cameraIndex)
             )
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_5::
+    ::____switch25_case_5::
     do
         do
             BlzFrameSetAlpha(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_6::
+    ::____switch25_case_6::
     do
         do
             BlzFrameSetLevel(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_7::
+    ::____switch25_case_7::
     do
         do
             BlzFrameSetVisible(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_8::
+    ::____switch25_case_8::
     do
         do
             BlzFrameSetEnable(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_9::
+    ::____switch25_case_9::
     do
         do
             BlzFrameSetVertexColor(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_10::
+    ::____switch25_case_10::
     do
         do
             BlzFrameSetValue(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_11::
+    ::____switch25_case_11::
     do
         do
             BlzFrameSetSize(
                 frame,
-                (function(____lhs)
-                    if ____lhs == nil then
-                        return frameDefaults.size.width
-                    else
-                        return ____lhs
-                    end
-                end)(val.width),
-                (function(____lhs)
-                    if ____lhs == nil then
-                        return frameDefaults.size.height
-                    else
-                        return ____lhs
-                    end
-                end)(val.height)
+                smartSize(
+                    (function(____lhs)
+                        if ____lhs == nil then
+                            return frameDefaults.size.width
+                        else
+                            return ____lhs
+                        end
+                    end)(val.width)
+                ),
+                smartSize(
+                    (function(____lhs)
+                        if ____lhs == nil then
+                            return frameDefaults.size.height
+                        else
+                            return ____lhs
+                        end
+                    end)(val.height)
+                )
             )
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_12::
+    ::____switch25_case_12::
     do
         do
             BlzFrameSetStepSize(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_13::
+    ::____switch25_case_13::
     do
         do
-            BlzFrameSetTooltip(frame, val)
-            goto ____switch21_end
+            local existingTooltip = tooltipMap:get(frame)
+            local tooltip
+            if existingTooltip then
+                tooltip = existingTooltip
+            else
+                tooltip = ____exports.adapter:createFrame(
+                    \\"container\\",
+                    BlzGetOriginFrame(ORIGIN_FRAME_GAME_UI, 0),
+                    {name = \\"Tooltip\\"}
+                )
+                tooltipMap:set(frame, tooltip)
+            end
+            render(val, tooltip)
+            BlzFrameSetTooltip(frame, tooltip)
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_14::
+    ::____switch25_case_14::
     do
         do
             BlzFrameSetFont(
@@ -2374,10 +2433,10 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.flags)
             )
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_15::
+    ::____switch25_case_15::
     do
         do
             BlzFrameSetMinMaxValue(
@@ -2397,17 +2456,17 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.max)
             )
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_16::
+    ::____switch25_case_16::
     do
         do
             BlzFrameSetScale(frame, val)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_17::
+    ::____switch25_case_17::
     do
         do
             BlzFrameSetSpriteAnimate(
@@ -2427,10 +2486,10 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.flags)
             )
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_18::
+    ::____switch25_case_18::
     do
         do
             BlzFrameSetTextAlignment(
@@ -2450,10 +2509,10 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.horz)
             )
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_19::
+    ::____switch25_case_19::
     do
         do
             if val ~= nil then
@@ -2466,29 +2525,37 @@ setProp = function(frame, prop, value, oldValue)
                             BlzFrameGetParent(frame)
                         )
                     else
-                        local relative = resolveRelative(frame, position.relative)
+                        local relative = resolveRelative(frame, position.relative, position.relativePoint)
                         if relative then
-                            BlzFrameSetPoint(frame, position.point, relative, position.relativePoint, position.x or 0, position.y or 0)
+                            BlzFrameSetPoint(
+                                frame,
+                                position.point,
+                                relative,
+                                position.relativePoint,
+                                smartSize(position.x or 0),
+                                smartSize(position.y or 0)
+                            )
                         else
                             local parentRelative = previousToParentPoint(position.relativePoint)
+                            print(\\"parentRelative\\", position.relativePoint, parentRelative)
                             if parentRelative then
                                 BlzFrameSetPoint(
                                     frame,
                                     position.point,
                                     BlzFrameGetParent(frame),
                                     parentRelative,
-                                    position.x or 0,
-                                    position.y or 0
+                                    smartSize(position.x or 0),
+                                    smartSize(position.y or 0)
                                 )
                             end
                         end
                     end
                 end
             end
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_20::
+    ::____switch25_case_20::
     do
         do
             if val ~= nil then
@@ -2496,155 +2563,160 @@ setProp = function(frame, prop, value, oldValue)
                     if absPosition == \\"clear\\" then
                         BlzFrameClearAllPoints(frame)
                     else
-                        BlzFrameSetAbsPoint(frame, absPosition.point, absPosition.x or 0, absPosition.y or 0)
+                        BlzFrameSetAbsPoint(
+                            frame,
+                            absPosition.point,
+                            smartSize(absPosition.x or 0),
+                            smartSize(absPosition.y or 0)
+                        )
                     end
                 end
             end
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_21::
+    ::____switch25_case_21::
     do
         do
             setEventProp(frame, FRAMEEVENT_CONTROL_CLICK, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_22::
+    ::____switch25_case_22::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_ENTER, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_23::
+    ::____switch25_case_23::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_LEAVE, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_24::
+    ::____switch25_case_24::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_UP, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_25::
+    ::____switch25_case_25::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_DOWN, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_26::
+    ::____switch25_case_26::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_WHEEL, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_27::
+    ::____switch25_case_27::
     do
         do
             setEventProp(frame, FRAMEEVENT_CHECKBOX_CHECKED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_28::
+    ::____switch25_case_28::
     do
         do
             setEventProp(frame, FRAMEEVENT_CHECKBOX_UNCHECKED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_29::
+    ::____switch25_case_29::
     do
         do
             setEventProp(frame, FRAMEEVENT_EDITBOX_TEXT_CHANGED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_30::
+    ::____switch25_case_30::
     do
         do
             setEventProp(frame, FRAMEEVENT_POPUPMENU_ITEM_CHANGED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_31::
+    ::____switch25_case_31::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_DOUBLECLICK, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_32::
+    ::____switch25_case_32::
     do
         do
             setEventProp(frame, FRAMEEVENT_SPRITE_ANIM_UPDATE, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_33::
+    ::____switch25_case_33::
     do
         do
             setEventProp(frame, FRAMEEVENT_SLIDER_VALUE_CHANGED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_34::
+    ::____switch25_case_34::
     do
         do
             setEventProp(frame, FRAMEEVENT_DIALOG_CANCEL, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_35::
+    ::____switch25_case_35::
     do
         do
             setEventProp(frame, FRAMEEVENT_DIALOG_ACCEPT, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_36::
+    ::____switch25_case_36::
     do
         do
             setEventProp(frame, FRAMEEVENT_EDITBOX_ENTER, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch25_end
         end
     end
-    ::____switch21_case_37::
+    ::____switch25_case_37::
     do
     end
-    ::____switch21_case_38::
+    ::____switch25_case_38::
     do
     end
-    ::____switch21_case_39::
+    ::____switch25_case_39::
     do
     end
-    ::____switch21_case_40::
+    ::____switch25_case_40::
     do
     end
-    ::____switch21_case_41::
+    ::____switch25_case_41::
     do
     end
-    ::____switch21_case_42::
+    ::____switch25_case_42::
     do
     end
-    ::____switch21_case_43::
+    ::____switch25_case_43::
     do
     end
-    ::____switch21_case_44::
+    ::____switch25_case_44::
     do
-        goto ____switch21_end
+        goto ____switch25_end
     end
-    ::____switch21_case_default::
+    ::____switch25_case_default::
     do
         absurd(prop)
     end
-    ::____switch21_end::
+    ::____switch25_end::
 end
 local typeNames = {\\"backdrop\\", \\"button\\", \\"chatdisplay\\", \\"checkbox\\", \\"control\\", \\"dialog\\", \\"editbox\\", \\"gluebutton\\", \\"gluecheckbox\\", \\"glueeditbox\\", \\"gluepopupmenu\\", \\"gluetextbutton\\", \\"highlight\\", \\"listbox\\", \\"menu\\", \\"model\\", \\"popupmenu\\", \\"scrollbar\\", \\"slashchatbox\\", \\"slider\\", \\"sprite\\", \\"text\\", \\"textarea\\", \\"textbutton\\", \\"timertext\\"}
 local simpleTypeNames = {\\"simple-button\\", \\"simple-checkbox\\", \\"simple-statusbar\\"}
@@ -2653,7 +2725,6 @@ ____exports.adapter = {
         if not parentFrame then
             error(\\"expected parent frame\\", 0)
         end
-        local frame
         local name = props.name
         if name == nil then
             name = frameDefaults.name
@@ -2690,14 +2761,12 @@ ____exports.adapter = {
                 return ____lhs
             end
         end)(isSimple) then
-            frame = BlzCreateSimpleFrame(name, parentFrame, context)
-        elseif typeName then
-            frame = BlzCreateFrameByType(typeName, name, parentFrame, inherits or \\"\\", context)
-        else
-            frame = BlzCreateFrame(name, parentFrame, priority, context)
+            return BlzCreateSimpleFrame(name, parentFrame, context)
         end
-        ____exports.adapter:updateFrameProperties(frame, {}, props)
-        return frame
+        if typeName then
+            return BlzCreateFrameByType(typeName, name, parentFrame, inherits or \\"\\", context)
+        end
+        return BlzCreateFrame(name, parentFrame, priority, context)
     end,
     cleanupFrame = function(____, frame) return BlzDestroyFrame(frame) end,
     updateFrameProperties = function(____, frame, prevProps, nextProps)
@@ -2744,6 +2813,11 @@ local ____index = require(\\"node_modules.basic-pragma.src.index\\")
 local setAdapter = ____index.setAdapter
 setAdapter(adapter)
 do
+    local ____adapter = require(\\"src.adapter\\")
+    local setPixelScale = ____adapter.setPixelScale
+    ____exports.setPixelScale = setPixelScale
+end
+do
     local ____index = require(\\"node_modules.basic-pragma.src.index\\")
     local useState = ____index.useState
     local createElement = ____index.createElement
@@ -2759,7 +2833,15 @@ end,
 [\\"src.test.sample\\"] = function() local ____exports = {}
 local React = require(\\"src.index\\")
 local App
-App = function() return React.createElement(\\"frame\\", {name = \\"GLUETEXTBUTTON\\"}) end
+App = function() return React.createElement(
+    React.Fragment,
+    nil,
+    {
+        React.createElement(\\"frame\\", {name = \\"GLUETEXTBUTTON\\"}),
+        React.createElement(\\"frame\\", {}),
+        nil
+    }
+) end
 React.render(
     React.createElement(App, {}),
     BlzGetOriginFrame(ORIGIN_FRAME_GAME_UI, 0)

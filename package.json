@@ -14,8 +14,8 @@
     "typecheck": "tsc --project tsconfig.json"
   },
   "peerDependencies": {
-    "typescript": "^3.9.7",
-    "typescript-to-lua": "^0.35.0"
+    "typescript": "^4.0.5",
+    "typescript-to-lua": "^0.36.0"
   },
   "dependencies": {
     "tstl-jsx": "^2.0.0"
@@ -36,8 +36,8 @@
     "prettier": "^2.1.2",
     "ts-jest": "^26.4.1",
     "ts-node": "^9.0.0",
-    "typescript": "^3.9.7",
-    "typescript-to-lua": "^0.35.0",
+    "typescript": "^4.0.5",
+    "typescript-to-lua": "^0.36.0",
     "war3-types": "^1.0.2"
   },
   "files": [

@@ -14,4 +14,7 @@ export {
 	createElement,
 	Fragment,
 	render,
+	Children,
+	FunctionalComponent,
+	EmptyObject,
 } from "../node_modules/basic-pragma/src/index";

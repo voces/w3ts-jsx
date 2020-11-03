@@ -1,6 +1,11 @@
 /** @noSelfInFile **/
 
-type RelativeFrame = framehandle | "previous" | "parent" | "children";
+type RelativeFrame =
+	| framehandle
+	| "previous"
+	| "parent"
+	| "children"
+	| "children-reverse";
 
 type Pos =
 	| {

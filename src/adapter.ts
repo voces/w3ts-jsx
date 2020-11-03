@@ -35,7 +35,7 @@ const frameDefaults: Required<FrameProps> & { children: null } = {
 	visible: true,
 	position: null,
 	absPosition: null,
-	size: { width: 0.1, height: 0.1 },
+	size: { width: 0, height: 0 },
 	children: null,
 	// events
 	onClick: null,
@@ -149,6 +149,15 @@ const resolveRelative = (
 			if (firstChildRelativePoints.includes(relativePoint))
 				return BlzFrameGetChild(frame, 0);
 			if (lastChildRelativePoints.includes(relativePoint))
+				return BlzFrameGetChild(
+					frame,
+					BlzFrameGetChildrenCount(frame) - 1,
+				);
+			throw `When using relative=children, expected relativePoint to be in ${firstChildRelativePoints} or ${lastChildRelativePoints}`;
+		case "children-reverse":
+			if (lastChildRelativePoints.includes(relativePoint))
+				return BlzFrameGetChild(frame, 0);
+			if (firstChildRelativePoints.includes(relativePoint))
 				return BlzFrameGetChild(
 					frame,
 					BlzFrameGetChildrenCount(frame) - 1,
@@ -348,11 +357,6 @@ const setProp = (
 						else {
 							const parentRelative = previousToParentPoint(
 								position.relativePoint,
-							);
-							print(
-								"parentRelative",
-								position.relativePoint,
-								parentRelative,
 							);
 							if (parentRelative)
 								BlzFrameSetPoint(
@@ -560,6 +564,7 @@ export const adapter: Adapter<framehandle> = {
 		nextProps: FrameProps,
 	) => {
 		let prop: keyof FrameProps;
+
 		// Clear removed props
 		for (prop in prevProps)
 			if (!(prop in nextProps))
@@ -568,6 +573,7 @@ export const adapter: Adapter<framehandle> = {
 				} catch (err) {
 					print(err);
 				}
+
 		// Add new props
 		for (prop in nextProps)
 			if (nextProps[prop] !== prevProps[prop])
