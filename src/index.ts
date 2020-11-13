@@ -11,6 +11,8 @@ export { setPixelScale } from "./adapter";
 
 export {
 	useState,
+	useEffect,
+	useForceUpdate,
 	createElement,
 	Fragment,
 	render,

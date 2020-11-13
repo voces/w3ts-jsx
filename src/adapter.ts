@@ -1,6 +1,10 @@
 /** @noSelfInFile **/
 
-import { Adapter, render } from "../node_modules/basic-pragma/src/index";
+import {
+	Adapter,
+	flushUpdates,
+	render,
+} from "../node_modules/basic-pragma/src/index";
 
 // https://wc3modding.info/pages/jass-documentation-database/class/functions/file/common.j/
 // https://discordapp.com/channels/178569180625240064/311662737015046144/764384452867784704
@@ -511,13 +515,16 @@ const simpleTypeNames = [
 	"simple-statusbar",
 ];
 
+let updateScheduled = false;
+const schedulingTimer = CreateTimer();
+
 export const adapter: Adapter<framehandle> = {
 	createFrame: (
 		jsxType: string,
 		parentFrame: framehandle | undefined,
 		props: FrameProps,
 	) => {
-		if (!parentFrame) throw "expected parent frame";
+		if (!parentFrame) throw `expected parent frame for ${jsxType}`;
 
 		const {
 			name = frameDefaults.name,
@@ -585,4 +592,13 @@ export const adapter: Adapter<framehandle> = {
 	},
 
 	getParent: (frame: framehandle): framehandle => BlzFrameGetParent(frame),
+
+	scheduleUpdate: () => {
+		if (updateScheduled) return;
+		updateScheduled = true;
+		TimerStart(schedulingTimer, 0, false, () => {
+			updateScheduled = false;
+			flushUpdates();
+		});
+	},
 };
