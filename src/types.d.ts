@@ -56,6 +56,7 @@ type CommonFrameProps = {
 	size?: { width?: number; height?: number };
 	position?: Pos[] | null;
 	absPosition?: AbsPos[] | null;
+	ref?: { current: React.Node } | null;
 };
 
 // Props shared by all simple frames

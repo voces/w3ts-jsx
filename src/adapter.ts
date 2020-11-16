@@ -41,6 +41,7 @@ const frameDefaults: Required<FrameProps> & { children: null } = {
 	absPosition: null,
 	size: { width: 0, height: 0 },
 	children: null,
+	ref: null,
 	// events
 	onClick: null,
 	onMouseEnter: null,
@@ -294,9 +295,9 @@ const setProp = (
 					{ name: "Tooltip" },
 				);
 				tooltipMap.set(frame, tooltip);
+				BlzFrameSetTooltip(frame, tooltip);
 			}
 			render(val, tooltip);
-			BlzFrameSetTooltip(frame, tooltip);
 			break;
 		}
 		case "font": {
@@ -467,6 +468,10 @@ const setProp = (
 			setEventProp(frame, FRAMEEVENT_EDITBOX_ENTER, val, _oldValue);
 			break;
 		}
+		case "ref": {
+			if (val) val.current = frame;
+			break;
+		}
 		case "name":
 		case "priority":
 		case "isSimple":
@@ -532,6 +537,7 @@ export const adapter: Adapter<framehandle> = {
 			inherits,
 			isSimple,
 			context = frameDefaults.context,
+			ref,
 		} = props;
 
 		let typeName = props.typeName;
@@ -548,22 +554,30 @@ export const adapter: Adapter<framehandle> = {
 		if (typeName == null && jsxType === "simple-container")
 			typeName = "SIMPLEFRAME";
 
-		if (isSimple ?? jsxType === "simple-frame")
-			return BlzCreateSimpleFrame(name, parentFrame, context);
+		let frame: framehandle;
 
-		if (typeName)
-			return BlzCreateFrameByType(
+		if (isSimple ?? jsxType === "simple-frame")
+			frame = BlzCreateSimpleFrame(name, parentFrame, context);
+		else if (typeName)
+			frame = BlzCreateFrameByType(
 				typeName,
 				name,
 				parentFrame,
 				inherits ?? "",
 				context,
 			);
+		else frame = BlzCreateFrame(name, parentFrame, priority, context);
 
-		return BlzCreateFrame(name, parentFrame, priority, context);
+		if (ref) ref.current = frame;
+
+		return frame;
 	},
 
-	cleanupFrame: (frame: framehandle): void => BlzDestroyFrame(frame),
+	cleanupFrame: (frame: framehandle): void => {
+		BlzDestroyFrame(frame);
+		const existingTooltip = tooltipMap.get(frame);
+		if (existingTooltip) adapter.cleanupFrame(existingTooltip);
+	},
 
 	updateFrameProperties: (
 		frame: framehandle,
