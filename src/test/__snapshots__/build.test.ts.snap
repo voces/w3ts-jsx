@@ -495,6 +495,35 @@ function __TS__ClassExtends(target, base)
     end
 end
 
+function __TS__CloneDescriptor(____bindingPattern0)
+    local enumerable
+    enumerable = ____bindingPattern0.enumerable
+    local configurable
+    configurable = ____bindingPattern0.configurable
+    local get
+    get = ____bindingPattern0.get
+    local set
+    set = ____bindingPattern0.set
+    local writable
+    writable = ____bindingPattern0.writable
+    local value
+    value = ____bindingPattern0.value
+    local descriptor = {enumerable = enumerable == true, configurable = configurable == true}
+    local hasGetterOrSetter = (get ~= nil) or (set ~= nil)
+    local hasValueOrWritableAttribute = (writable ~= nil) or (value ~= nil)
+    if hasGetterOrSetter and hasValueOrWritableAttribute then
+        error(\\"Invalid property descriptor. Cannot both specify accessors and a value or writable attribute.\\", 0)
+    end
+    if get or set then
+        descriptor.get = get
+        descriptor.set = set
+    else
+        descriptor.value = value
+        descriptor.writable = writable == true
+    end
+    return descriptor
+end
+
 function __TS__Decorate(decorators, target, key, desc)
     local result = target
     do
@@ -505,8 +534,22 @@ function __TS__Decorate(decorators, target, key, desc)
                 local oldResult = result
                 if key == nil then
                     result = decorator(_G, result)
-                elseif desc ~= nil then
-                    result = decorator(_G, target, key, result)
+                elseif desc == true then
+                    local value = rawget(target, key)
+                    local descriptor = __TS__ObjectGetOwnPropertyDescriptor(target, key) or ({configurable = true, writable = true, value = value})
+                    local desc = decorator(_G, target, key, descriptor) or descriptor
+                    local isSimpleValue = (((desc.configurable == true) and (desc.writable == true)) and (not desc.get)) and (not desc.set)
+                    if isSimpleValue then
+                        rawset(target, key, desc.value)
+                    else
+                        __TS__SetDescriptor(
+                            target,
+                            key,
+                            __TS__ObjectAssign({}, descriptor, desc)
+                        )
+                    end
+                elseif desc == false then
+                    result = decorator(_G, target, key, desc)
                 else
                     result = decorator(_G, target, key)
                 end
@@ -518,67 +561,73 @@ function __TS__Decorate(decorators, target, key, desc)
     return result
 end
 
-function ____descriptorIndex(self, key)
-    local value = rawget(self, key)
-    if value ~= nil then
-        return value
-    end
-    local metatable = getmetatable(self)
-    while metatable do
-        local rawResult = rawget(metatable, key)
-        if rawResult ~= nil then
-            return rawResult
-        end
-        local descriptors = rawget(metatable, \\"_descriptors\\")
-        if descriptors then
-            local descriptor = descriptors[key]
-            if descriptor then
-                if descriptor.get then
-                    return descriptor.get(self)
-                end
-                return
-            end
-        end
-        metatable = getmetatable(metatable)
-    end
+function __TS__DecorateParam(paramIndex, decorator)
+    return function(____, target, key) return decorator(_G, target, key, paramIndex) end
 end
-function ____descriptorNewindex(self, key, value)
-    local metatable = getmetatable(self)
-    while metatable do
-        local descriptors = rawget(metatable, \\"_descriptors\\")
-        if descriptors then
-            local descriptor = descriptors[key]
-            if descriptor then
-                if descriptor.set then
-                    descriptor.set(self, value)
-                end
-                return
-            end
-        end
-        metatable = getmetatable(metatable)
-    end
-    rawset(self, key, value)
-end
-function __TS__SetDescriptor(metatable, prop, descriptor)
-    if not rawget(metatable, \\"_descriptors\\") then
-        metatable._descriptors = {}
-    end
-    metatable._descriptors[prop] = descriptor
-    if descriptor.get then
-        metatable.__index = ____descriptorIndex
-    end
-    if descriptor.set then
-        metatable.__newindex = ____descriptorNewindex
-    end
-end
-function __TS__ObjectDefineProperty(object, prop, descriptor)
+
+function __TS__ObjectGetOwnPropertyDescriptors(object)
     local metatable = getmetatable(object)
     if not metatable then
-        metatable = {}
-        setmetatable(object, metatable)
+        return {}
     end
-    __TS__SetDescriptor(metatable, prop, descriptor)
-    return object
+    return rawget(metatable, \\"_descriptors\\")
+end
+
+function __TS__Delete(target, key)
+    local descriptors = __TS__ObjectGetOwnPropertyDescriptors(target)
+    local descriptor = descriptors[key]
+    if descriptor then
+        if not descriptor.configurable then
+            error(
+                (((\\"Cannot delete property \\" .. tostring(key)) .. \\" of \\") .. tostring(target)) .. \\".\\",
+                0
+            )
+        end
+        descriptors[key] = nil
+        return true
+    end
+    if target[key] ~= nil then
+        target[key] = nil
+        return true
+    end
+    return false
+end
+
+function __TS__DelegatedYield(iterable)
+    if type(iterable) == \\"string\\" then
+        for index = 0, #iterable - 1 do
+            coroutine.yield(
+                __TS__StringAccess(iterable, index)
+            )
+        end
+    elseif iterable.____coroutine ~= nil then
+        local co = iterable.____coroutine
+        while true do
+            local status, value = coroutine.resume(co)
+            if not status then
+                error(value, 0)
+            end
+            if coroutine.status(co) == \\"dead\\" then
+                return value
+            else
+                coroutine.yield(value)
+            end
+        end
+    elseif iterable[Symbol.iterator] then
+        local iterator = iterable[Symbol.iterator](iterable)
+        while true do
+            local result = iterator:next()
+            if result.done then
+                return result.value
+            else
+                coroutine.yield(result.value)
+            end
+        end
+    else
+        for ____, value in ipairs(iterable) do
+            coroutine.yield(value)
+        end
+    end
 end
 
 function __TS__New(target, ...)
@@ -781,13 +830,13 @@ function __TS__IteratorStringStep(self, index)
     return index, string.sub(self, index, index)
 end
 function __TS__Iterator(iterable)
-    if iterable.____coroutine ~= nil then
+    if type(iterable) == \\"string\\" then
+        return __TS__IteratorStringStep, iterable, 0
+    elseif iterable.____coroutine ~= nil then
         return __TS__IteratorGeneratorStep, iterable
     elseif iterable[Symbol.iterator] then
         local iterator = iterable[Symbol.iterator](iterable)
         return __TS__IteratorIteratorStep, iterator
-    elseif type(iterable) == \\"string\\" then
-        return __TS__IteratorStringStep, iterable, 0
     else
         return ipairs(iterable)
     end
@@ -1036,6 +1085,105 @@ function __TS__ObjectAssign(to, ...)
     return to
 end
 
+function ____descriptorIndex(self, key)
+    local value = rawget(self, key)
+    if value ~= nil then
+        return value
+    end
+    local metatable = getmetatable(self)
+    while metatable do
+        local rawResult = rawget(metatable, key)
+        if rawResult ~= nil then
+            return rawResult
+        end
+        local descriptors = rawget(metatable, \\"_descriptors\\")
+        if descriptors then
+            local descriptor = descriptors[key]
+            if descriptor then
+                if descriptor.get then
+                    return descriptor.get(self)
+                end
+                return descriptor.value
+            end
+        end
+        metatable = getmetatable(metatable)
+    end
+end
+function ____descriptorNewindex(self, key, value)
+    local metatable = getmetatable(self)
+    while metatable do
+        local descriptors = rawget(metatable, \\"_descriptors\\")
+        if descriptors then
+            local descriptor = descriptors[key]
+            if descriptor then
+                if descriptor.set then
+                    descriptor.set(self, value)
+                else
+                    if descriptor.writable == false then
+                        error(
+                            (((\\"Cannot assign to read only property '\\" .. tostring(key)) .. \\"' of object '\\") .. tostring(self)) .. \\"'\\",
+                            0
+                        )
+                    end
+                    descriptor.value = value
+                end
+                return
+            end
+        end
+        metatable = getmetatable(metatable)
+    end
+    rawset(self, key, value)
+end
+function __TS__SetDescriptor(target, key, desc, isPrototype)
+    if isPrototype == nil then
+        isPrototype = false
+    end
+    local metatable = ((isPrototype and (function() return target end)) or (function() return getmetatable(target) end))()
+    if not metatable then
+        metatable = {}
+        setmetatable(target, metatable)
+    end
+    local value = rawget(target, key)
+    if value ~= nil then
+        rawset(target, key, nil)
+    end
+    if not rawget(metatable, \\"_descriptors\\") then
+        metatable._descriptors = {}
+    end
+    local descriptor = __TS__CloneDescriptor(desc)
+    metatable._descriptors[key] = descriptor
+    metatable.__index = ____descriptorIndex
+    metatable.__newindex = ____descriptorNewindex
+end
+
+function __TS__ObjectDefineProperty(target, key, desc)
+    local luaKey = (((type(key) == \\"number\\") and (function() return key + 1 end)) or (function() return key end))()
+    local value = rawget(target, luaKey)
+    local hasGetterOrSetter = (desc.get ~= nil) or (desc.set ~= nil)
+    local descriptor
+    if hasGetterOrSetter then
+        if value ~= nil then
+            error(
+                \\"Cannot redefine property: \\" .. tostring(key),
+                0
+            )
+        end
+        descriptor = desc
+    else
+        local valueExists = value ~= nil
+        descriptor = {
+            set = desc.set,
+            get = desc.get,
+            configurable = (((desc.configurable ~= nil) and (function() return desc.configurable end)) or (function() return valueExists end))(),
+            enumerable = (((desc.enumerable ~= nil) and (function() return desc.enumerable end)) or (function() return valueExists end))(),
+            writable = (((desc.writable ~= nil) and (function() return desc.writable end)) or (function() return valueExists end))(),
+            value = (((desc.value ~= nil) and (function() return desc.value end)) or (function() return value end))()
+        }
+    end
+    __TS__SetDescriptor(target, luaKey, descriptor)
+    return target
+end
+
 function __TS__ObjectEntries(obj)
     local result = {}
     for key in pairs(obj) do
@@ -1065,6 +1213,17 @@ function __TS__ObjectFromEntries(entries)
     return obj
 end
 
+function __TS__ObjectGetOwnPropertyDescriptor(object, key)
+    local metatable = getmetatable(object)
+    if not metatable then
+        return
+    end
+    if not rawget(metatable, \\"_descriptors\\") then
+        return
+    end
+    return rawget(metatable, \\"_descriptors\\")[key]
+end
+
 function __TS__ObjectKeys(obj)
     local result = {}
     for key in pairs(obj) do
@@ -1089,6 +1248,48 @@ function __TS__ObjectValues(obj)
         result[#result + 1] = obj[key]
     end
     return result
+end
+
+function __TS__ParseFloat(numberString)
+    local infinityMatch = string.match(numberString, \\"^%s*(-?Infinity)\\")
+    if infinityMatch then
+        return (((__TS__StringAccess(infinityMatch, 0) == \\"-\\") and (function() return -math.huge end)) or (function() return math.huge end))()
+    end
+    local number = tonumber(
+        string.match(numberString, \\"^%s*(-?%d+%.?%d*)\\")
+    )
+    return number or (0 / 0)
+end
+
+__TS__parseInt_base_pattern = \\"0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTvVwWxXyYzZ\\"
+function __TS__ParseInt(numberString, base)
+    if base == nil then
+        base = 10
+        local hexMatch = string.match(numberString, \\"^%s*-?0[xX]\\")
+        if hexMatch then
+            base = 16
+            numberString = ((string.match(hexMatch, \\"-\\") and (function() return \\"-\\" .. tostring(
+                __TS__StringSubstr(numberString, #hexMatch)
+            ) end)) or (function() return __TS__StringSubstr(numberString, #hexMatch) end))()
+        end
+    end
+    if (base < 2) or (base > 36) then
+        return 0 / 0
+    end
+    local allowedDigits = (((base <= 10) and (function() return __TS__StringSubstring(__TS__parseInt_base_pattern, 0, base) end)) or (function() return __TS__StringSubstr(__TS__parseInt_base_pattern, 0, 10 + (2 * (base - 10))) end))()
+    local pattern = (\\"^%s*(-?[\\" .. tostring(allowedDigits)) .. \\"]*)\\"
+    local number = tonumber(
+        string.match(numberString, pattern),
+        base
+    )
+    if number == nil then
+        return 0 / 0
+    end
+    if number >= 0 then
+        return math.floor(number)
+    else
+        return math.ceil(number)
+    end
 end
 
 Set = (function()
@@ -1619,34 +1820,77 @@ end
 
 end,
 [\\"node_modules.basic-pragma.src.adapter\\"] = function() local ____exports = {}
-local baseCreateFrame
-baseCreateFrame = function()
+local function baseCreateFrame()
     error(\\"Adapter has not implemented createFrame\\", 0)
 end
-local baseCleanupFrame
-baseCleanupFrame = function()
+local function baseCleanupFrame()
     error(\\"Adapter has not implemented cleanupFrame\\", 0)
 end
-local baseUpdateFrameProperties
-baseUpdateFrameProperties = function()
+local function baseUpdateFrameProperties()
     error(\\"Adapter has not implemented updateFrameProperties\\", 0)
 end
-local baseGetParent
-baseGetParent = function()
+local function baseGetParent()
     error(\\"Adapter has not implemented getParent\\", 0)
 end
-local internalAdapter = {createFrame = baseCreateFrame, cleanupFrame = baseCleanupFrame, updateFrameProperties = baseUpdateFrameProperties, getParent = baseGetParent}
+local function baseScheduleUpdate()
+    error(\\"Adapter has not implemented scheduleUdate\\", 0)
+end
+local internalAdapter = {createFrame = baseCreateFrame, cleanupFrame = baseCleanupFrame, updateFrameProperties = baseUpdateFrameProperties, getParent = baseGetParent, scheduleUpdate = baseScheduleUpdate}
 ____exports.adapter = internalAdapter
 ____exports.setAdapter = function(adapter)
     internalAdapter.createFrame = adapter.createFrame or baseCreateFrame
     internalAdapter.cleanupFrame = adapter.cleanupFrame or baseCleanupFrame
     internalAdapter.getParent = adapter.getParent or baseGetParent
     internalAdapter.updateFrameProperties = adapter.updateFrameProperties or baseUpdateFrameProperties
+    internalAdapter.scheduleUpdate = adapter.scheduleUpdate or baseScheduleUpdate
 end
 return ____exports
 end,
 [\\"node_modules.basic-pragma.src.common\\"] = function() local ____exports = {}
 ____exports.TEXT_ELEMENT = \\"TEXT ELEMENT\\"
+____exports.isLua = _G._VERSION ~= nil
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.utils.arrays\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____common = require(\\"node_modules.basic-pragma.src.common\\")
+local isLua = ____common.isLua
+____exports.getLength = function(____, arr) return (isLua and __TS__ArrayReduce(
+    __TS__ObjectKeys(arr),
+    function(____, max, key)
+        local keyAsNumber = __TS__ParseInt(key)
+        if type(keyAsNumber) == \\"number\\" then
+            return ((max > keyAsNumber) and max) or keyAsNumber
+        end
+        return max
+    end,
+    0
+)) or #arr end
+____exports.compact = function(____, arr)
+    local length = ____exports.getLength(nil, arr)
+    local newArr = {}
+    do
+        local i = 0
+        while i < length do
+            local val = arr[i + 1]
+            if val ~= nil then
+                __TS__ArrayPush(newArr, val)
+            end
+            i = i + 1
+        end
+    end
+    return newArr
+end
+____exports.forEach = function(____, arr, fn)
+    local length = ____exports.getLength(nil, arr)
+    do
+        local i = 0
+        while i < length do
+            fn(nil, arr[i + 1], i)
+            i = i + 1
+        end
+    end
+end
 return ____exports
 end,
 [\\"node_modules.basic-pragma.src.reconciler\\"] = function() require(\\"lualib_bundle\\");
@@ -1657,8 +1901,11 @@ local ____element = require(\\"node_modules.basic-pragma.src.element\\")
 local isChild = ____element.isChild
 local processChildren = ____element.processChildren
 local ____common = require(\\"node_modules.basic-pragma.src.common\\")
+local isLua = ____common.isLua
 local TEXT_ELEMENT = ____common.TEXT_ELEMENT
-local cleanupFrames, reconcileChildren, instantiate, functionalComponentClasses, isClass, createPublicInstance, updateInstance
+local ____arrays = require(\\"node_modules.basic-pragma.src.utils.arrays\\")
+local compact = ____arrays.compact
+local cleanupFrames, reconcileChildren, instantiate, functionalComponentClasses, isClass, createPublicInstance
 function ____exports.reconcile(parentFrame, instance, vnode)
     do
         local ____try, err, ____returnValue = pcall(
@@ -1682,7 +1929,18 @@ function ____exports.reconcile(parentFrame, instance, vnode)
                         instanceOfSameType.childInstances = reconcileChildren(instanceOfSameType, vnode)
                     elseif instanceOfSameType.component then
                         instanceOfSameType.component.props = vnode.props
-                        ____exports.hooks.beforeRender(instanceOfSameType.component)
+                        do
+                            local ____try, err = pcall(
+                                function()
+                                    ____exports.hooks.beforeRender(instanceOfSameType.component)
+                                end
+                            )
+                            if not ____try then
+                                print(err)
+                                cleanupFrames(instance)
+                                error(err, 0)
+                            end
+                        end
                         local rendered = instanceOfSameType.component:render(vnode.props)
                         local children = (isChild(rendered) and ((rendered and ({rendered})) or ({}))) or rendered
                         instanceOfSameType.childInstances = reconcileChildren(instanceOfSameType, vnode, children)
@@ -1704,6 +1962,9 @@ function ____exports.reconcile(parentFrame, instance, vnode)
     end
 end
 function cleanupFrames(instance)
+    if instance.component then
+        ____exports.hooks.beforeUnmount(instance.component)
+    end
     if instance.childInstances then
         for ____, child in ipairs(instance.childInstances) do
             if child ~= nil then
@@ -1711,7 +1972,9 @@ function cleanupFrames(instance)
             end
         end
     end
-    adapter:cleanupFrame(instance.hostFrame)
+    if instance.hostFrame then
+        adapter:cleanupFrame(instance.hostFrame)
+    end
 end
 function reconcileChildren(instance, vnode, children)
     if children == nil then
@@ -1728,14 +1991,13 @@ function reconcileChildren(instance, vnode, children)
             local childInstance = childInstances[i + 1]
             local childElement = nextChildElements[i + 1]
             local newChildInstance = ____exports.reconcile(hostFrame, childInstance, childElement)
-            __TS__ArrayPush(newChildInstances, newChildInstance)
+            if newChildInstance ~= nil then
+                __TS__ArrayPush(newChildInstances, newChildInstance)
+            end
             i = i + 1
         end
     end
-    return __TS__ArrayFilter(
-        newChildInstances,
-        function(____, instance) return instance ~= nil end
-    )
+    return newChildInstances
 end
 function instantiate(vnode, parentFrame)
     local ____type = vnode.type
@@ -1751,17 +2013,35 @@ function instantiate(vnode, parentFrame)
             function(____, child) return instantiate(child, frame) end
         )
         local instance = {hostFrame = frame, vnode = vnode, childInstances = childInstances}
+        adapter:updateFrameProperties(frame, {}, props)
         return instance
     else
         local instance = {vnode = vnode}
         instance.component = createPublicInstance(vnode, instance)
-        ____exports.hooks.beforeRender(instance.component)
-        local rendered = instance.component:render(props)
+        do
+            local ____try, err = pcall(
+                function()
+                    ____exports.hooks.beforeRender(instance.component)
+                end
+            )
+            if not ____try then
+                print(err)
+            end
+        end
+        local rendered = (function(____lhs)
+            if ____lhs == nil then
+                return {}
+            else
+                return ____lhs
+            end
+        end)(
+            instance.component:render(props)
+        )
         local childElements = (isChild(rendered) and ({rendered})) or rendered
         instance.childInstances = __TS__ArrayMap(
             __TS__ArrayFilter(
-                childElements,
-                function(____, child) return (type(child) == \\"table\\") and (child ~= nil) end
+                compact(nil, childElements),
+                function(____, child) return type(child) == \\"table\\" end
             ),
             function(____, child) return instantiate(child, parentFrame) end
         )
@@ -1777,8 +2057,7 @@ function createPublicInstance(vnode, internalInstance)
     elseif isClass(ComponentType) then
         constructor = ComponentType
     else
-        local renderFunc
-        renderFunc = ComponentType
+        local renderFunc = ComponentType
         local existingClass = functionalComponentClasses:get(renderFunc)
         if existingClass then
             constructor = existingClass
@@ -1799,12 +2078,10 @@ function createPublicInstance(vnode, internalInstance)
     publicInstance.instance = internalInstance
     return publicInstance
 end
-function updateInstance(internalInstance)
-    local vnode = internalInstance.vnode
-    ____exports.reconcile(nil, internalInstance, vnode)
-end
 ____exports.hooks = {
     beforeRender = function(instance)
+    end,
+    beforeUnmount = function(instance)
     end
 }
 local containerMap = __TS__New(WeakMap)
@@ -1814,7 +2091,6 @@ function ____exports.render(vnode, container)
     containerMap:set(containerMap, nextInstance)
 end
 functionalComponentClasses = __TS__New(WeakMap)
-local isLua = _G._VERSION ~= nil
 isClass = function(constructor)
     if isLua then
         return type(constructor) ~= \\"function\\"
@@ -1823,6 +2099,11 @@ isClass = function(constructor)
     end
 end
 local instanceMap = __TS__New(WeakMap)
+local scheduledUpdates = __TS__New(Set)
+local function scheduleUpdate(instance)
+    scheduledUpdates:add(instance)
+    adapter:scheduleUpdate()
+end
 ____exports.ClassComponent = __TS__Class()
 local ClassComponent = ____exports.ClassComponent
 ClassComponent.name = \\"ClassComponent\\"
@@ -1837,15 +2118,29 @@ __TS__SetDescriptor(
         set = function(self, instance)
             instanceMap:set(self, instance)
         end
-    }
+    },
+    true
 )
 function ClassComponent.prototype.setState(self, partialState)
     self.state = __TS__ObjectAssign({}, self.state, partialState)
     local instance = instanceMap:get(self)
     if instance then
-        updateInstance(instance)
+        scheduleUpdate(instance)
     end
 end
+local function updateInstance(internalInstance)
+    local vnode = internalInstance.vnode
+    ____exports.reconcile(nil, internalInstance, vnode)
+end
+____exports.flushUpdates = function()
+    for ____, instance in __TS__Iterator(
+        scheduledUpdates:values()
+    ) do
+        updateInstance(instance)
+    end
+    scheduledUpdates:clear()
+end
+____exports.test = {functionalComponentClasses = functionalComponentClasses}
 return ____exports
 end,
 [\\"node_modules.basic-pragma.src.Component\\"] = function() local ____exports = {}
@@ -1855,6 +2150,9 @@ end,
 local ____exports = {}
 local ____common = require(\\"node_modules.basic-pragma.src.common\\")
 local TEXT_ELEMENT = ____common.TEXT_ELEMENT
+local ____arrays = require(\\"node_modules.basic-pragma.src.utils.arrays\\")
+local compact = ____arrays.compact
+local getLength = ____arrays.getLength
 local createTextElement
 function ____exports.createElement(____type, config, children)
     local ____ = __TS__ObjectAssign({}, config)
@@ -1863,11 +2161,13 @@ function ____exports.createElement(____type, config, children)
         key = nil
     end
     local props = __TS__ObjectRest(____, {key = true, props = true})
-    local flattenedChildren = ____exports.processChildren(((children and (#children > 0)) and children) or ({}))
+    local flattenedChildren = ____exports.processChildren(
+        ((children and (getLength(nil, children) > 0)) and children) or ({})
+    )
     if #flattenedChildren > 0 then
         props.children = flattenedChildren
     else
-        props.children = nil
+        __TS__Delete(props, \\"children\\")
     end
     local vnode = {type = ____type, props = props}
     if key ~= nil then
@@ -1878,40 +2178,70 @@ end
 function createTextElement(value)
     return ____exports.createElement(TEXT_ELEMENT, {nodeValue = value})
 end
-____exports.isChild = function(obj) return (((type(obj) == \\"table\\") and (obj ~= nil)) and (obj.type ~= nil)) and (obj.props ~= nil) end
+____exports.isChild = function(obj) return (((((type(obj) == \\"table\\") and (obj ~= nil)) and (obj.type ~= nil)) and (obj.props ~= nil)) or (type(obj) == \\"boolean\\")) or (type(obj) == \\"string\\") end
 ____exports.processChildren = function(children) return __TS__ArrayMap(
     __TS__ArrayFilter(
-        __TS__ArrayFlat(children),
-        function(____, c) return ((c ~= nil) and (type(c) ~= \\"boolean\\")) and ((type(c) == \\"string\\") or (not (not c.type))) end
+        compact(
+            nil,
+            __TS__ArrayFlat(
+                compact(nil, children)
+            )
+        ),
+        function(____, c) return (type(c) ~= \\"boolean\\") and ((type(c) == \\"string\\") or (not (not c.type))) end
     ),
     function(____, c) return ((type(c) == \\"string\\") and createTextElement(c)) or c end
 ) end
 local EMPTY_OBJECT = {}
-____exports.Fragment = function(props) return props.children end
+____exports.Fragment = function(____bindingPattern0)
+    local children
+    children = ____bindingPattern0.children
+    return children or nil
+end
 return ____exports
 end,
-[\\"node_modules.basic-pragma.src.hooks.base\\"] = function() require(\\"lualib_bundle\\");
+[\\"node_modules.basic-pragma.src.hooks.types\\"] = function() local ____exports = {}
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.hooks.context\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+____exports.hookContext = {}
+____exports.hookMap = __TS__New(WeakMap)
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.hooks.reconcilerHooks\\"] = function() require(\\"lualib_bundle\\");
 local ____exports = {}
 local ____reconciler = require(\\"node_modules.basic-pragma.src.reconciler\\")
 local hooks = ____reconciler.hooks
-local oldBeforeRender
-oldBeforeRender = hooks.beforeRender
-____exports.hookContext = {}
-____exports.hookMap = __TS__New(WeakMap)
+local ____context = require(\\"node_modules.basic-pragma.src.hooks.context\\")
+local hookContext = ____context.hookContext
+local hookMap = ____context.hookMap
+local oldBeforeRender = hooks.beforeRender
+local oldBeforeUnmount = hooks.beforeUnmount
 hooks.beforeRender = function(instance)
     oldBeforeRender(instance)
-    ____exports.hookContext.currentInstance = instance
-    ____exports.hookContext.currentIndex = 0
-    if not ____exports.hookMap:has(instance) then
-        ____exports.hookMap:set(instance, {})
+    hookContext.currentInstance = instance
+    hookContext.currentIndex = 0
+    if not hookMap:has(instance) then
+        hookMap:set(instance, {})
+    end
+end
+hooks.beforeUnmount = function(instance)
+    oldBeforeUnmount(instance)
+    local hooks = hookMap:get(instance)
+    if hooks then
+        __TS__ArrayForEach(
+            hooks,
+            function(____, hook) return ((hook.type == \\"effect\\") and hook.cleanup) and hook.cleanup() end
+        )
     end
 end
 return ____exports
 end,
 [\\"node_modules.basic-pragma.src.hooks.useReducer\\"] = function() local ____exports = {}
-local ____base = require(\\"node_modules.basic-pragma.src.hooks.base\\")
-local hookContext = ____base.hookContext
-local hookMap = ____base.hookMap
+local ____context = require(\\"node_modules.basic-pragma.src.hooks.context\\")
+local hookContext = ____context.hookContext
+local hookMap = ____context.hookMap
+require(\\"node_modules.basic-pragma.src.hooks.reconcilerHooks\\")
 ____exports.useReducer = function(reducer, initialState)
     local index = (function()
         local ____tmp = hookContext.currentIndex
@@ -1922,7 +2252,13 @@ ____exports.useReducer = function(reducer, initialState)
     local state = hooks[index + 1] or (function(o, i, v)
         o[i] = v
         return v
-    end)(hooks, index + 1, {})
+    end)(hooks, index + 1, {type = \\"reducer\\"})
+    if state.type ~= \\"reducer\\" then
+        error(
+            ((\\"Expected a reducer hook at index \\" .. tostring(index)) .. \\", got \\") .. tostring(state.type),
+            0
+        )
+    end
     state.reducer = reducer
     if not state.instance then
         state.value = {
@@ -1945,9 +2281,104 @@ end,
 local ____useReducer = require(\\"node_modules.basic-pragma.src.hooks.useReducer\\")
 local useReducer = ____useReducer.useReducer
 ____exports.useState = function(initialState) return useReducer(
-    function(_, v) return v end,
+    function(oldState, v)
+        if type(v) ~= \\"function\\" then
+            return v
+        end
+        return v(oldState)
+    end,
     initialState
 ) end
+____exports.useForceUpdate = function()
+    local ____, setTick = table.unpack(
+        ____exports.useState(0)
+    )
+    local function update()
+        setTick(
+            function(tick) return tick + 1 end
+        )
+    end
+    return update
+end
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.hooks.helpers\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+____exports.argsChanged = function(oldArgs, newArgs) return (#oldArgs ~= #newArgs) or __TS__ArraySome(
+    newArgs,
+    function(____, arg, index) return arg ~= oldArgs[index + 1] end
+) end
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.hooks.useEffect\\"] = function() local ____exports = {}
+local ____context = require(\\"node_modules.basic-pragma.src.hooks.context\\")
+local hookContext = ____context.hookContext
+local hookMap = ____context.hookMap
+local ____helpers = require(\\"node_modules.basic-pragma.src.hooks.helpers\\")
+local argsChanged = ____helpers.argsChanged
+require(\\"node_modules.basic-pragma.src.hooks.reconcilerHooks\\")
+____exports.useEffect = function(callback, inputs)
+    local index = (function()
+        local ____tmp = hookContext.currentIndex
+        hookContext.currentIndex = ____tmp + 1
+        return ____tmp
+    end)()
+    local hooks = hookMap:get(hookContext.currentInstance)
+    local oldState = hooks[index + 1]
+    local state = oldState or (function(o, i, v)
+        o[i] = v
+        return v
+    end)(hooks, index + 1, {type = \\"effect\\"})
+    if state.type ~= \\"effect\\" then
+        error(
+            ((\\"Expected an effect hook at index \\" .. tostring(index)) .. \\", got \\") .. tostring(state.type),
+            0
+        )
+    end
+    if (not oldState) or ((state.lastInputs and inputs) and argsChanged(state.lastInputs, inputs)) then
+        if state.cleanup then
+            state.cleanup()
+        end
+        state.lastInputs = inputs
+        state.cleanup = callback()
+    end
+end
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.hooks.useRef\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____context = require(\\"node_modules.basic-pragma.src.hooks.context\\")
+local hookContext = ____context.hookContext
+local hookMap = ____context.hookMap
+require(\\"node_modules.basic-pragma.src.hooks.reconcilerHooks\\")
+local function initializeRef(initial)
+    local state = {type = \\"ref\\", current = initial}
+    __TS__ObjectDefineProperty(state, \\"type\\", {enumerable = false, value = \\"ref\\"})
+    return state
+end
+____exports.useRef = function(initial)
+    local index = (function()
+        local ____tmp = hookContext.currentIndex
+        hookContext.currentIndex = ____tmp + 1
+        return ____tmp
+    end)()
+    local hooks = hookMap:get(hookContext.currentInstance)
+    local state = hooks[index + 1] or (function(o, i, v)
+        o[i] = v
+        return v
+    end)(
+        hooks,
+        index + 1,
+        initializeRef(initial)
+    )
+    if state.type ~= \\"ref\\" then
+        error(
+            ((\\"Expected a ref hook at index \\" .. tostring(index)) .. \\", got \\") .. tostring(state.type),
+            0
+        )
+    end
+    return state
+end
 return ____exports
 end,
 [\\"node_modules.basic-pragma.src.index\\"] = function() local ____exports = {}
@@ -1966,7 +2397,9 @@ end
 do
     local ____reconciler = require(\\"node_modules.basic-pragma.src.reconciler\\")
     local render = ____reconciler.render
+    local flushUpdates = ____reconciler.flushUpdates
     ____exports.render = render
+    ____exports.flushUpdates = flushUpdates
 end
 do
     local ____useReducer = require(\\"node_modules.basic-pragma.src.hooks.useReducer\\")
@@ -1976,15 +2409,29 @@ end
 do
     local ____useState = require(\\"node_modules.basic-pragma.src.hooks.useState\\")
     local useState = ____useState.useState
+    local useForceUpdate = ____useState.useForceUpdate
     ____exports.useState = useState
+    ____exports.useForceUpdate = useForceUpdate
+end
+do
+    local ____useEffect = require(\\"node_modules.basic-pragma.src.hooks.useEffect\\")
+    local useEffect = ____useEffect.useEffect
+    ____exports.useEffect = useEffect
+end
+do
+    local ____useRef = require(\\"node_modules.basic-pragma.src.hooks.useRef\\")
+    local useRef = ____useRef.useRef
+    ____exports.useRef = useRef
 end
 return ____exports
 end,
 [\\"src.adapter\\"] = function() require(\\"lualib_bundle\\");
 local ____exports = {}
-local frameDefaults = {name = \\"AnonymousFrame\\", priority = 0, isSimple = true, typeName = nil, inherits = \\"\\", context = 0, key = nil, alpha = 255, enabled = true, font = {fileName = \\"\\", height = 16, flags = 0}, level = 0, maxLength = 9999, minMaxValue = {min = -999999999, max = 999999999}, model = {modelFile = \\"\\", cameraIndex = 0}, scale = 1, spriteAnimate = {primaryProp = 0, flags = 0}, stepSize = 0, text = \\"\\", textAlignment = {vert = TEXT_JUSTIFY_TOP, horz = TEXT_JUSTIFY_LEFT}, textColor = 16777215, texture = {texFile = \\"\\", flag = 0, blend = true}, tooltip = nil, value = 0, vertexColor = 16777215, visible = true, position = nil, absPosition = nil, size = {width = 0.1, height = 0.1}, children = nil, onClick = nil, onMouseEnter = nil, onMouseLeave = nil, onMouseUp = nil, onMouseDown = nil, onMouseWheel = nil, onCheckboxChecked = nil, onCheckboxUnchecked = nil, onEditboxTextChanged = nil, onPopupmenuItemChanged = nil, onDoubleClick = nil, onSpriteAnimUpdate = nil, onSliderChanged = nil, onDialogCancel = nil, onDialogAccept = nil, onEditboxEnter = nil}
-local absurd
-absurd = function(value)
+local ____index = require(\\"node_modules.basic-pragma.src.index\\")
+local flushUpdates = ____index.flushUpdates
+local render = ____index.render
+local frameDefaults = {name = \\"AnonymousFrame\\", priority = 0, isSimple = true, typeName = nil, inherits = \\"\\", context = 0, key = nil, alpha = 255, enabled = true, font = {fileName = \\"\\", height = 16, flags = 0}, level = 0, maxLength = 9999, minMaxValue = {min = -999999999, max = 999999999}, model = {modelFile = \\"\\", cameraIndex = 0}, scale = 1, spriteAnimate = {primaryProp = 0, flags = 0}, stepSize = 0, text = \\"\\", textAlignment = {vert = TEXT_JUSTIFY_TOP, horz = TEXT_JUSTIFY_LEFT}, textColor = 16777215, texture = {texFile = \\"\\", flag = 0, blend = true}, tooltip = nil, value = 0, vertexColor = 16777215, visible = true, position = nil, absPosition = nil, size = {width = 0, height = 0}, children = nil, ref = nil, onClick = nil, onMouseEnter = nil, onMouseLeave = nil, onMouseUp = nil, onMouseDown = nil, onMouseWheel = nil, onCheckboxChecked = nil, onCheckboxUnchecked = nil, onEditboxTextChanged = nil, onPopupmenuItemChanged = nil, onDoubleClick = nil, onSpriteAnimUpdate = nil, onSliderChanged = nil, onDialogCancel = nil, onDialogAccept = nil, onEditboxEnter = nil}
+local function absurd(value)
     error(
         (\\"Got \\" .. tostring(value)) .. \\" when expected nothing\\",
         0
@@ -1992,8 +2439,7 @@ absurd = function(value)
 end
 local triggerMap = __TS__New(WeakMap)
 local conditionMap = __TS__New(WeakMap)
-local setEventProp
-setEventProp = function(frame, event, val, oldValue)
+local function setEventProp(frame, event, val, oldValue)
     local t = triggerMap:get(oldValue)
     if val == nil then
         if t then
@@ -2028,8 +2474,9 @@ setEventProp = function(frame, event, val, oldValue)
     conditionMap:set(val, condition)
     triggerMap:set(val, t)
 end
-local resolveRelative
-resolveRelative = function(frame, relative)
+local firstChildRelativePoints = {FRAMEPOINT_TOPLEFT, FRAMEPOINT_TOP, FRAMEPOINT_LEFT}
+local lastChildRelativePoints = {FRAMEPOINT_RIGHT, FRAMEPOINT_BOTTOM, FRAMEPOINT_BOTTOMRIGHT}
+local function resolveRelative(frame, relative, relativePoint)
     if type(relative) ~= \\"string\\" then
         return relative
     end
@@ -2038,6 +2485,10 @@ resolveRelative = function(frame, relative)
         goto ____switch13_case_0
     elseif ____switch13 == \\"previous\\" then
         goto ____switch13_case_1
+    elseif ____switch13 == \\"children\\" then
+        goto ____switch13_case_2
+    elseif ____switch13 == \\"children-reverse\\" then
+        goto ____switch13_case_3
     end
     goto ____switch13_case_default
     ::____switch13_case_0::
@@ -2066,33 +2517,83 @@ resolveRelative = function(frame, relative)
             return nil
         end
     end
+    ::____switch13_case_2::
+    do
+        if __TS__ArrayIncludes(firstChildRelativePoints, relativePoint) then
+            return BlzFrameGetChild(frame, 0)
+        end
+        if __TS__ArrayIncludes(lastChildRelativePoints, relativePoint) then
+            return BlzFrameGetChild(
+                frame,
+                BlzFrameGetChildrenCount(frame) - 1
+            )
+        end
+        error(
+            ((\\"When using relative=children, expected relativePoint to be in \\" .. tostring(firstChildRelativePoints)) .. \\" or \\") .. tostring(lastChildRelativePoints),
+            0
+        )
+    end
+    ::____switch13_case_3::
+    do
+        if __TS__ArrayIncludes(lastChildRelativePoints, relativePoint) then
+            return BlzFrameGetChild(frame, 0)
+        end
+        if __TS__ArrayIncludes(firstChildRelativePoints, relativePoint) then
+            return BlzFrameGetChild(
+                frame,
+                BlzFrameGetChildrenCount(frame) - 1
+            )
+        end
+        error(
+            ((\\"When using relative=children, expected relativePoint to be in \\" .. tostring(firstChildRelativePoints)) .. \\" or \\") .. tostring(lastChildRelativePoints),
+            0
+        )
+    end
     ::____switch13_case_default::
     do
         absurd(relative)
     end
     ::____switch13_end::
 end
-local previousToParentPoint
-previousToParentPoint = function(relative)
-    local ____switch19 = relative
-    if ____switch19 == FRAMEPOINT_RIGHT then
-        goto ____switch19_case_0
-    elseif ____switch19 == FRAMEPOINT_BOTTOM then
-        goto ____switch19_case_1
+local function previousToParentPoint(relative)
+    local ____switch23 = relative
+    if ____switch23 == FRAMEPOINT_RIGHT then
+        goto ____switch23_case_0
+    elseif ____switch23 == FRAMEPOINT_BOTTOM then
+        goto ____switch23_case_1
+    elseif ____switch23 == FRAMEPOINT_BOTTOMLEFT then
+        goto ____switch23_case_2
+    elseif ____switch23 == FRAMEPOINT_BOTTOMRIGHT then
+        goto ____switch23_case_3
     end
-    goto ____switch19_end
-    ::____switch19_case_0::
+    goto ____switch23_end
+    ::____switch23_case_0::
     do
         return FRAMEPOINT_LEFT
     end
-    ::____switch19_case_1::
+    ::____switch23_case_1::
     do
         return FRAMEPOINT_TOP
     end
-    ::____switch19_end::
+    ::____switch23_case_2::
+    do
+        return FRAMEPOINT_TOPLEFT
+    end
+    ::____switch23_case_3::
+    do
+        return FRAMEPOINT_TOPRIGHT
+    end
+    ::____switch23_end::
 end
-local setProp
-setProp = function(frame, prop, value, oldValue)
+local tooltipMap = __TS__New(WeakMap)
+local scale = 1600 * 1.25
+____exports.setPixelScale = function(newScale)
+    scale = newScale * 1.25
+end
+local function smartSize(size)
+    return (((size < 1) and (size > -1)) and size) or (size / scale)
+end
+local function setProp(frame, prop, value, oldValue)
     local val = (function(____lhs)
         if ____lhs == nil then
             return frameDefaults[prop]
@@ -2101,121 +2602,123 @@ setProp = function(frame, prop, value, oldValue)
         end
     end)(value)
     local _oldValue = oldValue
-    local ____switch21 = prop
-    if ____switch21 == \\"text\\" then
-        goto ____switch21_case_0
-    elseif ____switch21 == \\"maxLength\\" then
-        goto ____switch21_case_1
-    elseif ____switch21 == \\"textColor\\" then
-        goto ____switch21_case_2
-    elseif ____switch21 == \\"texture\\" then
-        goto ____switch21_case_3
-    elseif ____switch21 == \\"model\\" then
-        goto ____switch21_case_4
-    elseif ____switch21 == \\"alpha\\" then
-        goto ____switch21_case_5
-    elseif ____switch21 == \\"level\\" then
-        goto ____switch21_case_6
-    elseif ____switch21 == \\"visible\\" then
-        goto ____switch21_case_7
-    elseif ____switch21 == \\"enabled\\" then
-        goto ____switch21_case_8
-    elseif ____switch21 == \\"vertexColor\\" then
-        goto ____switch21_case_9
-    elseif ____switch21 == \\"value\\" then
-        goto ____switch21_case_10
-    elseif ____switch21 == \\"size\\" then
-        goto ____switch21_case_11
-    elseif ____switch21 == \\"stepSize\\" then
-        goto ____switch21_case_12
-    elseif ____switch21 == \\"tooltip\\" then
-        goto ____switch21_case_13
-    elseif ____switch21 == \\"font\\" then
-        goto ____switch21_case_14
-    elseif ____switch21 == \\"minMaxValue\\" then
-        goto ____switch21_case_15
-    elseif ____switch21 == \\"scale\\" then
-        goto ____switch21_case_16
-    elseif ____switch21 == \\"spriteAnimate\\" then
-        goto ____switch21_case_17
-    elseif ____switch21 == \\"textAlignment\\" then
-        goto ____switch21_case_18
-    elseif ____switch21 == \\"position\\" then
-        goto ____switch21_case_19
-    elseif ____switch21 == \\"absPosition\\" then
-        goto ____switch21_case_20
-    elseif ____switch21 == \\"onClick\\" then
-        goto ____switch21_case_21
-    elseif ____switch21 == \\"onMouseEnter\\" then
-        goto ____switch21_case_22
-    elseif ____switch21 == \\"onMouseLeave\\" then
-        goto ____switch21_case_23
-    elseif ____switch21 == \\"onMouseUp\\" then
-        goto ____switch21_case_24
-    elseif ____switch21 == \\"onMouseDown\\" then
-        goto ____switch21_case_25
-    elseif ____switch21 == \\"onMouseWheel\\" then
-        goto ____switch21_case_26
-    elseif ____switch21 == \\"onCheckboxChecked\\" then
-        goto ____switch21_case_27
-    elseif ____switch21 == \\"onCheckboxUnchecked\\" then
-        goto ____switch21_case_28
-    elseif ____switch21 == \\"onEditboxTextChanged\\" then
-        goto ____switch21_case_29
-    elseif ____switch21 == \\"onPopupmenuItemChanged\\" then
-        goto ____switch21_case_30
-    elseif ____switch21 == \\"onDoubleClick\\" then
-        goto ____switch21_case_31
-    elseif ____switch21 == \\"onSpriteAnimUpdate\\" then
-        goto ____switch21_case_32
-    elseif ____switch21 == \\"onSliderChanged\\" then
-        goto ____switch21_case_33
-    elseif ____switch21 == \\"onDialogCancel\\" then
-        goto ____switch21_case_34
-    elseif ____switch21 == \\"onDialogAccept\\" then
-        goto ____switch21_case_35
-    elseif ____switch21 == \\"onEditboxEnter\\" then
-        goto ____switch21_case_36
-    elseif ____switch21 == \\"name\\" then
-        goto ____switch21_case_37
-    elseif ____switch21 == \\"priority\\" then
-        goto ____switch21_case_38
-    elseif ____switch21 == \\"isSimple\\" then
-        goto ____switch21_case_39
-    elseif ____switch21 == \\"typeName\\" then
-        goto ____switch21_case_40
-    elseif ____switch21 == \\"inherits\\" then
-        goto ____switch21_case_41
-    elseif ____switch21 == \\"children\\" then
-        goto ____switch21_case_42
-    elseif ____switch21 == \\"context\\" then
-        goto ____switch21_case_43
-    elseif ____switch21 == \\"key\\" then
-        goto ____switch21_case_44
+    local ____switch27 = prop
+    if ____switch27 == \\"text\\" then
+        goto ____switch27_case_0
+    elseif ____switch27 == \\"maxLength\\" then
+        goto ____switch27_case_1
+    elseif ____switch27 == \\"textColor\\" then
+        goto ____switch27_case_2
+    elseif ____switch27 == \\"texture\\" then
+        goto ____switch27_case_3
+    elseif ____switch27 == \\"model\\" then
+        goto ____switch27_case_4
+    elseif ____switch27 == \\"alpha\\" then
+        goto ____switch27_case_5
+    elseif ____switch27 == \\"level\\" then
+        goto ____switch27_case_6
+    elseif ____switch27 == \\"visible\\" then
+        goto ____switch27_case_7
+    elseif ____switch27 == \\"enabled\\" then
+        goto ____switch27_case_8
+    elseif ____switch27 == \\"vertexColor\\" then
+        goto ____switch27_case_9
+    elseif ____switch27 == \\"value\\" then
+        goto ____switch27_case_10
+    elseif ____switch27 == \\"size\\" then
+        goto ____switch27_case_11
+    elseif ____switch27 == \\"stepSize\\" then
+        goto ____switch27_case_12
+    elseif ____switch27 == \\"tooltip\\" then
+        goto ____switch27_case_13
+    elseif ____switch27 == \\"font\\" then
+        goto ____switch27_case_14
+    elseif ____switch27 == \\"minMaxValue\\" then
+        goto ____switch27_case_15
+    elseif ____switch27 == \\"scale\\" then
+        goto ____switch27_case_16
+    elseif ____switch27 == \\"spriteAnimate\\" then
+        goto ____switch27_case_17
+    elseif ____switch27 == \\"textAlignment\\" then
+        goto ____switch27_case_18
+    elseif ____switch27 == \\"position\\" then
+        goto ____switch27_case_19
+    elseif ____switch27 == \\"absPosition\\" then
+        goto ____switch27_case_20
+    elseif ____switch27 == \\"onClick\\" then
+        goto ____switch27_case_21
+    elseif ____switch27 == \\"onMouseEnter\\" then
+        goto ____switch27_case_22
+    elseif ____switch27 == \\"onMouseLeave\\" then
+        goto ____switch27_case_23
+    elseif ____switch27 == \\"onMouseUp\\" then
+        goto ____switch27_case_24
+    elseif ____switch27 == \\"onMouseDown\\" then
+        goto ____switch27_case_25
+    elseif ____switch27 == \\"onMouseWheel\\" then
+        goto ____switch27_case_26
+    elseif ____switch27 == \\"onCheckboxChecked\\" then
+        goto ____switch27_case_27
+    elseif ____switch27 == \\"onCheckboxUnchecked\\" then
+        goto ____switch27_case_28
+    elseif ____switch27 == \\"onEditboxTextChanged\\" then
+        goto ____switch27_case_29
+    elseif ____switch27 == \\"onPopupmenuItemChanged\\" then
+        goto ____switch27_case_30
+    elseif ____switch27 == \\"onDoubleClick\\" then
+        goto ____switch27_case_31
+    elseif ____switch27 == \\"onSpriteAnimUpdate\\" then
+        goto ____switch27_case_32
+    elseif ____switch27 == \\"onSliderChanged\\" then
+        goto ____switch27_case_33
+    elseif ____switch27 == \\"onDialogCancel\\" then
+        goto ____switch27_case_34
+    elseif ____switch27 == \\"onDialogAccept\\" then
+        goto ____switch27_case_35
+    elseif ____switch27 == \\"onEditboxEnter\\" then
+        goto ____switch27_case_36
+    elseif ____switch27 == \\"ref\\" then
+        goto ____switch27_case_37
+    elseif ____switch27 == \\"name\\" then
+        goto ____switch27_case_38
+    elseif ____switch27 == \\"priority\\" then
+        goto ____switch27_case_39
+    elseif ____switch27 == \\"isSimple\\" then
+        goto ____switch27_case_40
+    elseif ____switch27 == \\"typeName\\" then
+        goto ____switch27_case_41
+    elseif ____switch27 == \\"inherits\\" then
+        goto ____switch27_case_42
+    elseif ____switch27 == \\"children\\" then
+        goto ____switch27_case_43
+    elseif ____switch27 == \\"context\\" then
+        goto ____switch27_case_44
+    elseif ____switch27 == \\"key\\" then
+        goto ____switch27_case_45
     end
-    goto ____switch21_case_default
-    ::____switch21_case_0::
+    goto ____switch27_case_default
+    ::____switch27_case_0::
     do
         do
             BlzFrameSetText(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_1::
+    ::____switch27_case_1::
     do
         do
             BlzFrameSetTextSizeLimit(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_2::
+    ::____switch27_case_2::
     do
         do
             BlzFrameSetTextColor(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_3::
+    ::____switch27_case_3::
     do
         do
             BlzFrameSetTexture(
@@ -2242,10 +2745,10 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.blend)
             )
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_4::
+    ::____switch27_case_4::
     do
         do
             BlzFrameSetModel(
@@ -2265,89 +2768,106 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.cameraIndex)
             )
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_5::
+    ::____switch27_case_5::
     do
         do
             BlzFrameSetAlpha(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_6::
+    ::____switch27_case_6::
     do
         do
             BlzFrameSetLevel(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_7::
+    ::____switch27_case_7::
     do
         do
             BlzFrameSetVisible(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_8::
+    ::____switch27_case_8::
     do
         do
             BlzFrameSetEnable(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_9::
+    ::____switch27_case_9::
     do
         do
             BlzFrameSetVertexColor(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_10::
+    ::____switch27_case_10::
     do
         do
             BlzFrameSetValue(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_11::
+    ::____switch27_case_11::
     do
         do
             BlzFrameSetSize(
                 frame,
-                (function(____lhs)
-                    if ____lhs == nil then
-                        return frameDefaults.size.width
-                    else
-                        return ____lhs
-                    end
-                end)(val.width),
-                (function(____lhs)
-                    if ____lhs == nil then
-                        return frameDefaults.size.height
-                    else
-                        return ____lhs
-                    end
-                end)(val.height)
+                smartSize(
+                    (function(____lhs)
+                        if ____lhs == nil then
+                            return frameDefaults.size.width
+                        else
+                            return ____lhs
+                        end
+                    end)(val.width)
+                ),
+                smartSize(
+                    (function(____lhs)
+                        if ____lhs == nil then
+                            return frameDefaults.size.height
+                        else
+                            return ____lhs
+                        end
+                    end)(val.height)
+                )
             )
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_12::
+    ::____switch27_case_12::
     do
         do
             BlzFrameSetStepSize(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_13::
+    ::____switch27_case_13::
     do
         do
-            BlzFrameSetTooltip(frame, val)
-            goto ____switch21_end
+            local existingTooltip = tooltipMap:get(frame)
+            local tooltip
+            if existingTooltip then
+                tooltip = existingTooltip
+            else
+                tooltip = ____exports.adapter:createFrame(
+                    \\"container\\",
+                    BlzGetOriginFrame(ORIGIN_FRAME_GAME_UI, 0),
+                    {name = \\"Tooltip\\"}
+                )
+                tooltipMap:set(frame, tooltip)
+                BlzFrameSetTooltip(frame, tooltip)
+            end
+            render(val, tooltip)
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_14::
+    ::____switch27_case_14::
     do
         do
             BlzFrameSetFont(
@@ -2374,10 +2894,10 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.flags)
             )
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_15::
+    ::____switch27_case_15::
     do
         do
             BlzFrameSetMinMaxValue(
@@ -2397,17 +2917,17 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.max)
             )
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_16::
+    ::____switch27_case_16::
     do
         do
             BlzFrameSetScale(frame, val)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_17::
+    ::____switch27_case_17::
     do
         do
             BlzFrameSetSpriteAnimate(
@@ -2427,10 +2947,10 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.flags)
             )
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_18::
+    ::____switch27_case_18::
     do
         do
             BlzFrameSetTextAlignment(
@@ -2450,10 +2970,10 @@ setProp = function(frame, prop, value, oldValue)
                     end
                 end)(val.horz)
             )
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_19::
+    ::____switch27_case_19::
     do
         do
             if val ~= nil then
@@ -2466,9 +2986,16 @@ setProp = function(frame, prop, value, oldValue)
                             BlzFrameGetParent(frame)
                         )
                     else
-                        local relative = resolveRelative(frame, position.relative)
+                        local relative = resolveRelative(frame, position.relative, position.relativePoint)
                         if relative then
-                            BlzFrameSetPoint(frame, position.point, relative, position.relativePoint, position.x or 0, position.y or 0)
+                            BlzFrameSetPoint(
+                                frame,
+                                position.point,
+                                relative,
+                                position.relativePoint,
+                                smartSize(position.x or 0),
+                                smartSize(position.y or 0)
+                            )
                         else
                             local parentRelative = previousToParentPoint(position.relativePoint)
                             if parentRelative then
@@ -2477,18 +3004,18 @@ setProp = function(frame, prop, value, oldValue)
                                     position.point,
                                     BlzFrameGetParent(frame),
                                     parentRelative,
-                                    position.x or 0,
-                                    position.y or 0
+                                    smartSize(position.x or 0),
+                                    smartSize(position.y or 0)
                                 )
                             end
                         end
                     end
                 end
             end
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_20::
+    ::____switch27_case_20::
     do
         do
             if val ~= nil then
@@ -2496,164 +3023,182 @@ setProp = function(frame, prop, value, oldValue)
                     if absPosition == \\"clear\\" then
                         BlzFrameClearAllPoints(frame)
                     else
-                        BlzFrameSetAbsPoint(frame, absPosition.point, absPosition.x or 0, absPosition.y or 0)
+                        BlzFrameSetAbsPoint(
+                            frame,
+                            absPosition.point,
+                            smartSize(absPosition.x or 0),
+                            smartSize(absPosition.y or 0)
+                        )
                     end
                 end
             end
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_21::
+    ::____switch27_case_21::
     do
         do
             setEventProp(frame, FRAMEEVENT_CONTROL_CLICK, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_22::
+    ::____switch27_case_22::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_ENTER, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_23::
+    ::____switch27_case_23::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_LEAVE, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_24::
+    ::____switch27_case_24::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_UP, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_25::
+    ::____switch27_case_25::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_DOWN, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_26::
+    ::____switch27_case_26::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_WHEEL, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_27::
+    ::____switch27_case_27::
     do
         do
             setEventProp(frame, FRAMEEVENT_CHECKBOX_CHECKED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_28::
+    ::____switch27_case_28::
     do
         do
             setEventProp(frame, FRAMEEVENT_CHECKBOX_UNCHECKED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_29::
+    ::____switch27_case_29::
     do
         do
             setEventProp(frame, FRAMEEVENT_EDITBOX_TEXT_CHANGED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_30::
+    ::____switch27_case_30::
     do
         do
             setEventProp(frame, FRAMEEVENT_POPUPMENU_ITEM_CHANGED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_31::
+    ::____switch27_case_31::
     do
         do
             setEventProp(frame, FRAMEEVENT_MOUSE_DOUBLECLICK, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_32::
+    ::____switch27_case_32::
     do
         do
             setEventProp(frame, FRAMEEVENT_SPRITE_ANIM_UPDATE, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_33::
+    ::____switch27_case_33::
     do
         do
             setEventProp(frame, FRAMEEVENT_SLIDER_VALUE_CHANGED, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_34::
+    ::____switch27_case_34::
     do
         do
             setEventProp(frame, FRAMEEVENT_DIALOG_CANCEL, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_35::
+    ::____switch27_case_35::
     do
         do
             setEventProp(frame, FRAMEEVENT_DIALOG_ACCEPT, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_36::
+    ::____switch27_case_36::
     do
         do
             setEventProp(frame, FRAMEEVENT_EDITBOX_ENTER, val, _oldValue)
-            goto ____switch21_end
+            goto ____switch27_end
         end
     end
-    ::____switch21_case_37::
+    ::____switch27_case_37::
+    do
+        do
+            if val then
+                val.current = frame
+            end
+            goto ____switch27_end
+        end
+    end
+    ::____switch27_case_38::
     do
     end
-    ::____switch21_case_38::
+    ::____switch27_case_39::
     do
     end
-    ::____switch21_case_39::
+    ::____switch27_case_40::
     do
     end
-    ::____switch21_case_40::
+    ::____switch27_case_41::
     do
     end
-    ::____switch21_case_41::
+    ::____switch27_case_42::
     do
     end
-    ::____switch21_case_42::
+    ::____switch27_case_43::
     do
     end
-    ::____switch21_case_43::
+    ::____switch27_case_44::
     do
     end
-    ::____switch21_case_44::
+    ::____switch27_case_45::
     do
-        goto ____switch21_end
+        goto ____switch27_end
     end
-    ::____switch21_case_default::
+    ::____switch27_case_default::
     do
         absurd(prop)
     end
-    ::____switch21_end::
+    ::____switch27_end::
 end
 local typeNames = {\\"backdrop\\", \\"button\\", \\"chatdisplay\\", \\"checkbox\\", \\"control\\", \\"dialog\\", \\"editbox\\", \\"gluebutton\\", \\"gluecheckbox\\", \\"glueeditbox\\", \\"gluepopupmenu\\", \\"gluetextbutton\\", \\"highlight\\", \\"listbox\\", \\"menu\\", \\"model\\", \\"popupmenu\\", \\"scrollbar\\", \\"slashchatbox\\", \\"slider\\", \\"sprite\\", \\"text\\", \\"textarea\\", \\"textbutton\\", \\"timertext\\"}
 local simpleTypeNames = {\\"simple-button\\", \\"simple-checkbox\\", \\"simple-statusbar\\"}
+local updateScheduled = false
+local schedulingTimer = CreateTimer()
 ____exports.adapter = {
     createFrame = function(____, jsxType, parentFrame, props)
         if not parentFrame then
-            error(\\"expected parent frame\\", 0)
+            error(
+                \\"expected parent frame for \\" .. tostring(jsxType),
+                0
+            )
         end
-        local frame
         local name = props.name
         if name == nil then
             name = frameDefaults.name
@@ -2668,6 +3213,7 @@ ____exports.adapter = {
         if context == nil then
             context = frameDefaults.context
         end
+        local ref = props.ref
         local typeName = props.typeName
         if (typeName == nil) and __TS__ArrayIncludes(typeNames, jsxType) then
             typeName = string.upper(jsxType)
@@ -2683,6 +3229,7 @@ ____exports.adapter = {
         if (typeName == nil) and (jsxType == \\"simple-container\\") then
             typeName = \\"SIMPLEFRAME\\"
         end
+        local frame
         if (function(____lhs)
             if ____lhs == nil then
                 return jsxType == \\"simple-frame\\"
@@ -2696,10 +3243,18 @@ ____exports.adapter = {
         else
             frame = BlzCreateFrame(name, parentFrame, priority, context)
         end
-        ____exports.adapter:updateFrameProperties(frame, {}, props)
+        if ref then
+            ref.current = frame
+        end
         return frame
     end,
-    cleanupFrame = function(____, frame) return BlzDestroyFrame(frame) end,
+    cleanupFrame = function(____, frame)
+        BlzDestroyFrame(frame)
+        local existingTooltip = tooltipMap:get(frame)
+        if existingTooltip then
+            ____exports.adapter:cleanupFrame(existingTooltip)
+        end
+    end,
     updateFrameProperties = function(____, frame, prevProps, nextProps)
         local prop
         for ____value in pairs(prevProps) do
@@ -2733,7 +3288,22 @@ ____exports.adapter = {
             end
         end
     end,
-    getParent = function(____, frame) return BlzFrameGetParent(frame) end
+    getParent = function(____, frame) return BlzFrameGetParent(frame) end,
+    scheduleUpdate = function()
+        if updateScheduled then
+            return
+        end
+        updateScheduled = true
+        TimerStart(
+            schedulingTimer,
+            0,
+            false,
+            function()
+                updateScheduled = false
+                flushUpdates()
+            end
+        )
+    end
 }
 return ____exports
 end,
@@ -2744,26 +3314,253 @@ local ____index = require(\\"node_modules.basic-pragma.src.index\\")
 local setAdapter = ____index.setAdapter
 setAdapter(adapter)
 do
+    local ____adapter = require(\\"src.adapter\\")
+    local setPixelScale = ____adapter.setPixelScale
+    ____exports.setPixelScale = setPixelScale
+end
+do
     local ____index = require(\\"node_modules.basic-pragma.src.index\\")
-    local useState = ____index.useState
     local createElement = ____index.createElement
     local Fragment = ____index.Fragment
     local render = ____index.render
-    ____exports.useState = useState
+    local useEffect = ____index.useEffect
+    local useForceUpdate = ____index.useForceUpdate
+    local useRef = ____index.useRef
+    local useState = ____index.useState
     ____exports.createElement = createElement
     ____exports.Fragment = Fragment
     ____exports.render = render
+    ____exports.useEffect = useEffect
+    ____exports.useForceUpdate = useForceUpdate
+    ____exports.useRef = useRef
+    ____exports.useState = useState
 end
 return ____exports
 end,
 [\\"src.test.sample\\"] = function() local ____exports = {}
 local React = require(\\"src.index\\")
-local App
-App = function() return React.createElement(\\"frame\\", {name = \\"GLUETEXTBUTTON\\"}) end
+local function App()
+    return React.createElement(
+        React.Fragment,
+        null,
+        {
+            React.createElement(\\"frame\\", {name = \\"GLUETEXTBUTTON\\"}),
+            React.createElement(\\"frame\\", {}),
+            nil
+        }
+    )
+end
 React.render(
     React.createElement(App, {}),
     BlzGetOriginFrame(ORIGIN_FRAME_GAME_UI, 0)
 )
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.utils.colorize\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+____exports.hex = {mana = 12835839, health = 65280, healthHigh = 65280}
+local color = {red = \\"|cffff0303\\", blue = \\"|cff0042ff\\", teal = \\"|cff1ce6b9\\", purple = \\"|cff540081\\", yellow = \\"|cfffffc00\\", orange = \\"|cfffe8a0e\\", green = \\"|cff20c000\\", pink = \\"|cffe55bb0\\", gray = \\"|cff959697\\", lightblue = \\"|cff7ebff1\\", darkgreen = \\"|cff106246\\", brown = \\"|cff4a2a04\\", maroon = \\"|cff9b0000\\", navy = \\"|cff0000c3\\", turquoise = \\"|cff00eaff\\", violet = \\"|cffbe00fe\\", wheat = \\"|cffebcd87\\", peach = \\"|cfff8a48b\\", mint = \\"|cffbfff80\\", lavender = \\"|cffdcb9eb\\", coal = \\"|cff282828\\", snow = \\"|cffebf0ff\\", emerald = \\"|cff00781e\\", peanut = \\"|cffa46f33\\", sheepblue = \\"|CFF3F81F8\\", wolfred = \\"|CFFC00040\\", gold = \\"|CFFD9D919\\", string = \\"|cffce915b\\", number = \\"|cffdcdc8b\\", boolean = \\"|cff569cd6\\", white = \\"|cffffffff\\", handle = \\"|cff7ebff1\\"}
+____exports.colorize = {}
+__TS__ArrayForEach(
+    __TS__ObjectEntries(color),
+    function(____, ____bindingPattern0)
+        local color
+        color = ____bindingPattern0[1]
+        local code
+        code = ____bindingPattern0[2]
+        return (function(o, i, v)
+            o[i] = v
+            return v
+        end)(
+            ____exports.colorize,
+            color,
+            function(____string) return (tostring(code) .. tostring(____string)) .. \\"|r\\" end
+        )
+    end
+)
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.utils.log\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____colorize = require(\\"node_modules.basic-pragma.src.utils.colorize\\")
+local colorize = ____colorize.colorize
+local MAX_WIDTH = 78
+local TRAILING_COMMA = false
+local INDENT = \\"  \\"
+local INDENT_WIDTH = #INDENT
+local function isArray(v)
+    if type(v) ~= \\"table\\" then
+        return false
+    end
+    return __TS__ArrayEvery(
+        __TS__ObjectKeys(v),
+        function(____, v, index) return (__TS__ParseInt(v) == (index + 1)) or (__TS__ParseInt(v) == index) end
+    ) and ((v[0] ~= nil) or (v[1] ~= nil))
+end
+local function userdataType(userdata)
+    local typeString = tostring(userdata)
+    return __TS__StringSlice(
+        typeString,
+        0,
+        (string.find(typeString, \\":\\", nil, true) or 0) - 1
+    )
+end
+____exports.termToString = function(v, color, level)
+    if color == nil then
+        color = true
+    end
+    if level == nil then
+        level = 0
+    end
+    if type(v) == \\"string\\" then
+        return (color and colorize.string(
+            (\\"\\\\\\"\\" .. tostring(v)) .. \\"\\\\\\"\\"
+        )) or v
+    end
+    if type(v) == \\"number\\" then
+        return (color and colorize.number(v)) or tostring(v)
+    end
+    if type(v) == \\"boolean\\" then
+        return (color and colorize.boolean(v)) or tostring(v)
+    end
+    if type(v) == \\"function\\" then
+        return (color and colorize.number(\\"<function>\\")) or \\"<function>\\"
+    end
+    if v == nil then
+        return (color and colorize.boolean(\\"null\\")) or \\"null\\"
+    end
+    if isArray(v) then
+        local arr = v
+        local tryingCompact = ((level + (#arr * 3)) + 2) < MAX_WIDTH
+        local compact = \\"[\\" .. tostring((#arr and \\" \\") or \\"\\")
+        do
+            local i = 0
+            while (i < #arr) and tryingCompact do
+                compact = tostring(compact) .. (tostring(
+                    ____exports.termToString(arr[i + 1], color, level + 1)
+                ) .. tostring(((i < (#arr - 1)) and \\", \\") or \\"\\"))
+                if #compact > MAX_WIDTH then
+                    tryingCompact = false
+                end
+                i = i + 1
+            end
+        end
+        if tryingCompact then
+            compact = tostring(compact) .. (tostring((#arr and \\" \\") or \\"\\") .. \\"]\\")
+            if #compact <= MAX_WIDTH then
+                return compact
+            end
+        end
+        return table.concat(
+            {
+                \\"[\\",
+                tostring(
+                    table.concat(
+                        __TS__ArrayMap(
+                            arr,
+                            function(____, element) return tostring(
+                                string.rep(
+                                    INDENT,
+                                    math.floor(level + 1)
+                                )
+                            ) .. tostring(
+                                ____exports.termToString(element, color, level + 1)
+                            ) end
+                        ),
+                        \\",\\\\n\\" or \\",\\"
+                    )
+                ) .. tostring((TRAILING_COMMA and \\",\\") or \\"\\"),
+                tostring(
+                    string.rep(
+                        INDENT,
+                        math.floor(level)
+                    )
+                ) .. \\"]\\"
+            },
+            \\"\\\\n\\" or \\",\\"
+        )
+    end
+    if (type(v) == \\"table\\") and (v ~= nil) then
+        local entries = __TS__ObjectEntries(v)
+        local tryingCompact = (((level * INDENT_WIDTH) + (#entries * 3)) + 2) < MAX_WIDTH
+        if tryingCompact then
+            local compact = \\"{\\" .. tostring(((#entries > 0) and \\" \\") or \\"\\")
+            do
+                local i = 0
+                while (i < #entries) and tryingCompact do
+                    local key, value = table.unpack(entries[i + 1])
+                    compact = tostring(compact) .. (((tostring(key) .. \\": \\") .. tostring(
+                        ____exports.termToString(value, color, level + 1)
+                    )) .. tostring(((i < (#entries - 1)) and \\", \\") or \\"\\"))
+                    if ((level * INDENT_WIDTH) + #compact) > MAX_WIDTH then
+                        tryingCompact = false
+                    end
+                    i = i + 1
+                end
+            end
+            if tryingCompact then
+                compact = tostring(compact) .. (tostring((#entries and \\" \\") or \\"\\") .. \\"}\\")
+                if ((level * INDENT_WIDTH) + #compact) <= MAX_WIDTH then
+                    return compact
+                end
+            end
+        end
+        return table.concat(
+            {
+                \\"{\\",
+                tostring(
+                    table.concat(
+                        __TS__ArrayMap(
+                            entries,
+                            function(____, ____bindingPattern0)
+                                local key
+                                key = ____bindingPattern0[1]
+                                local value
+                                value = ____bindingPattern0[2]
+                                local prefix = tostring(key) .. \\": \\"
+                                return (tostring(
+                                    string.rep(
+                                        INDENT,
+                                        math.floor(level + 1)
+                                    )
+                                ) .. tostring(prefix)) .. tostring(
+                                    ____exports.termToString(value, color, level + 1)
+                                )
+                            end
+                        ),
+                        \\",\\\\n\\" or \\",\\"
+                    )
+                ) .. tostring((TRAILING_COMMA and \\",\\") or \\"\\"),
+                tostring(
+                    string.rep(
+                        INDENT,
+                        math.floor(level)
+                    )
+                ) .. \\"}\\"
+            },
+            \\"\\\\n\\" or \\",\\"
+        )
+    end
+    local ____type = userdataType(v)
+    local str = (\\"<\\" .. tostring(____type)) .. \\">\\"
+    return (color and colorize.handle(str)) or str
+end
+____exports.log = function(...)
+    local args = {...}
+    return __TS__ArrayForEach(
+        __TS__StringSplit(
+            table.concat(
+                __TS__ArrayMap(
+                    args,
+                    function(____, v) return ____exports.termToString(v) end
+                ),
+                \\" \\" or \\",\\"
+            ),
+            \\"\\\\n\\"
+        ),
+        function(____, line) return print(line) end
+    )
+end
 return ____exports
 end,
 }

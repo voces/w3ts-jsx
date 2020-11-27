@@ -1,9 +1,16 @@
 /** @noSelfInFile **/
 
+type RelativeFrame =
+	| framehandle
+	| "previous"
+	| "parent"
+	| "children"
+	| "children-reverse";
+
 type Pos =
 	| {
 			point: framepointtype;
-			relative: framehandle | "previous" | "parent";
+			relative: RelativeFrame;
 			relativePoint: framepointtype;
 			x?: number;
 			y?: number;
@@ -49,6 +56,7 @@ type CommonFrameProps = {
 	size?: { width?: number; height?: number };
 	position?: Pos[] | null;
 	absPosition?: AbsPos[] | null;
+	ref?: { current: React.Node } | null;
 };
 
 // Props shared by all simple frames
@@ -353,10 +361,3 @@ declare namespace JSX {
 		timertext: TimerTextProps;
 	}
 }
-
-// Missing from war3-types
-declare function BlzFrameGetChildrenCount(frame: framehandle): number;
-declare function BlzFrameGetChild(
-	frame: framehandle,
-	index: number,
-): framehandle;
