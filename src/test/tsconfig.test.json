@@ -14,7 +14,7 @@
 		"luaBundleEntry": "sample.tsx",
 		"luaPlugins": [
 			{
-				"name": "../transformers",
+				"name": "tstl-jsx",
 				"import": "JsxTransformer"
 			}
 		]
