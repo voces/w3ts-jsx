@@ -2195,7 +2195,7 @@ local EMPTY_OBJECT = {}
 ____exports.Fragment = function(____bindingPattern0)
     local children
     children = ____bindingPattern0.children
-    return children
+    return children or nil
 end
 return ____exports
 end,
@@ -2331,7 +2331,7 @@ ____exports.useEffect = function(callback, inputs)
     end)(hooks, index + 1, {type = \\"effect\\"})
     if state.type ~= \\"effect\\" then
         error(
-            ((\\"Expected a effect hook at index \\" .. tostring(index)) .. \\", got \\") .. tostring(state.type),
+            ((\\"Expected an effect hook at index \\" .. tostring(index)) .. \\", got \\") .. tostring(state.type),
             0
         )
     end
@@ -2351,6 +2351,11 @@ local ____context = require(\\"node_modules.basic-pragma.src.hooks.context\\")
 local hookContext = ____context.hookContext
 local hookMap = ____context.hookMap
 require(\\"node_modules.basic-pragma.src.hooks.reconcilerHooks\\")
+local function initializeRef(initial)
+    local state = {type = \\"ref\\", current = initial}
+    __TS__ObjectDefineProperty(state, \\"type\\", {enumerable = false, value = \\"ref\\"})
+    return state
+end
 ____exports.useRef = function(initial)
     local index = (function()
         local ____tmp = hookContext.currentIndex
@@ -2358,18 +2363,20 @@ ____exports.useRef = function(initial)
         return ____tmp
     end)()
     local hooks = hookMap:get(hookContext.currentInstance)
-    local oldState = hooks[index + 1]
-    local state = oldState or (function(o, i, v)
+    local state = hooks[index + 1] or (function(o, i, v)
         o[i] = v
         return v
-    end)(hooks, index + 1, {type = \\"ref\\", current = initial})
+    end)(
+        hooks,
+        index + 1,
+        initializeRef(initial)
+    )
     if state.type ~= \\"ref\\" then
         error(
-            ((\\"Expected a effect hook at index \\" .. tostring(index)) .. \\", got \\") .. tostring(state.type),
+            ((\\"Expected a ref hook at index \\" .. tostring(index)) .. \\", got \\") .. tostring(state.type),
             0
         )
     end
-    __TS__ObjectDefineProperty(state, \\"type\\", {enumerable = false})
     return state
 end
 return ____exports
@@ -3347,6 +3354,213 @@ React.render(
     React.createElement(App, {}),
     BlzGetOriginFrame(ORIGIN_FRAME_GAME_UI, 0)
 )
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.utils.colorize\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+____exports.hex = {mana = 12835839, health = 65280, healthHigh = 65280}
+local color = {red = \\"|cffff0303\\", blue = \\"|cff0042ff\\", teal = \\"|cff1ce6b9\\", purple = \\"|cff540081\\", yellow = \\"|cfffffc00\\", orange = \\"|cfffe8a0e\\", green = \\"|cff20c000\\", pink = \\"|cffe55bb0\\", gray = \\"|cff959697\\", lightblue = \\"|cff7ebff1\\", darkgreen = \\"|cff106246\\", brown = \\"|cff4a2a04\\", maroon = \\"|cff9b0000\\", navy = \\"|cff0000c3\\", turquoise = \\"|cff00eaff\\", violet = \\"|cffbe00fe\\", wheat = \\"|cffebcd87\\", peach = \\"|cfff8a48b\\", mint = \\"|cffbfff80\\", lavender = \\"|cffdcb9eb\\", coal = \\"|cff282828\\", snow = \\"|cffebf0ff\\", emerald = \\"|cff00781e\\", peanut = \\"|cffa46f33\\", sheepblue = \\"|CFF3F81F8\\", wolfred = \\"|CFFC00040\\", gold = \\"|CFFD9D919\\", string = \\"|cffce915b\\", number = \\"|cffdcdc8b\\", boolean = \\"|cff569cd6\\", white = \\"|cffffffff\\", handle = \\"|cff7ebff1\\"}
+____exports.colorize = {}
+__TS__ArrayForEach(
+    __TS__ObjectEntries(color),
+    function(____, ____bindingPattern0)
+        local color
+        color = ____bindingPattern0[1]
+        local code
+        code = ____bindingPattern0[2]
+        return (function(o, i, v)
+            o[i] = v
+            return v
+        end)(
+            ____exports.colorize,
+            color,
+            function(____string) return (tostring(code) .. tostring(____string)) .. \\"|r\\" end
+        )
+    end
+)
+return ____exports
+end,
+[\\"node_modules.basic-pragma.src.utils.log\\"] = function() require(\\"lualib_bundle\\");
+local ____exports = {}
+local ____colorize = require(\\"node_modules.basic-pragma.src.utils.colorize\\")
+local colorize = ____colorize.colorize
+local MAX_WIDTH = 78
+local TRAILING_COMMA = false
+local INDENT = \\"  \\"
+local INDENT_WIDTH = #INDENT
+local function isArray(v)
+    if type(v) ~= \\"table\\" then
+        return false
+    end
+    return __TS__ArrayEvery(
+        __TS__ObjectKeys(v),
+        function(____, v, index) return (__TS__ParseInt(v) == (index + 1)) or (__TS__ParseInt(v) == index) end
+    ) and ((v[0] ~= nil) or (v[1] ~= nil))
+end
+local function userdataType(userdata)
+    local typeString = tostring(userdata)
+    return __TS__StringSlice(
+        typeString,
+        0,
+        (string.find(typeString, \\":\\", nil, true) or 0) - 1
+    )
+end
+____exports.termToString = function(v, color, level)
+    if color == nil then
+        color = true
+    end
+    if level == nil then
+        level = 0
+    end
+    if type(v) == \\"string\\" then
+        return (color and colorize.string(
+            (\\"\\\\\\"\\" .. tostring(v)) .. \\"\\\\\\"\\"
+        )) or v
+    end
+    if type(v) == \\"number\\" then
+        return (color and colorize.number(v)) or tostring(v)
+    end
+    if type(v) == \\"boolean\\" then
+        return (color and colorize.boolean(v)) or tostring(v)
+    end
+    if type(v) == \\"function\\" then
+        return (color and colorize.number(\\"<function>\\")) or \\"<function>\\"
+    end
+    if v == nil then
+        return (color and colorize.boolean(\\"null\\")) or \\"null\\"
+    end
+    if isArray(v) then
+        local arr = v
+        local tryingCompact = ((level + (#arr * 3)) + 2) < MAX_WIDTH
+        local compact = \\"[\\" .. tostring((#arr and \\" \\") or \\"\\")
+        do
+            local i = 0
+            while (i < #arr) and tryingCompact do
+                compact = tostring(compact) .. (tostring(
+                    ____exports.termToString(arr[i + 1], color, level + 1)
+                ) .. tostring(((i < (#arr - 1)) and \\", \\") or \\"\\"))
+                if #compact > MAX_WIDTH then
+                    tryingCompact = false
+                end
+                i = i + 1
+            end
+        end
+        if tryingCompact then
+            compact = tostring(compact) .. (tostring((#arr and \\" \\") or \\"\\") .. \\"]\\")
+            if #compact <= MAX_WIDTH then
+                return compact
+            end
+        end
+        return table.concat(
+            {
+                \\"[\\",
+                tostring(
+                    table.concat(
+                        __TS__ArrayMap(
+                            arr,
+                            function(____, element) return tostring(
+                                string.rep(
+                                    INDENT,
+                                    math.floor(level + 1)
+                                )
+                            ) .. tostring(
+                                ____exports.termToString(element, color, level + 1)
+                            ) end
+                        ),
+                        \\",\\\\n\\" or \\",\\"
+                    )
+                ) .. tostring((TRAILING_COMMA and \\",\\") or \\"\\"),
+                tostring(
+                    string.rep(
+                        INDENT,
+                        math.floor(level)
+                    )
+                ) .. \\"]\\"
+            },
+            \\"\\\\n\\" or \\",\\"
+        )
+    end
+    if (type(v) == \\"table\\") and (v ~= nil) then
+        local entries = __TS__ObjectEntries(v)
+        local tryingCompact = (((level * INDENT_WIDTH) + (#entries * 3)) + 2) < MAX_WIDTH
+        if tryingCompact then
+            local compact = \\"{\\" .. tostring(((#entries > 0) and \\" \\") or \\"\\")
+            do
+                local i = 0
+                while (i < #entries) and tryingCompact do
+                    local key, value = table.unpack(entries[i + 1])
+                    compact = tostring(compact) .. (((tostring(key) .. \\": \\") .. tostring(
+                        ____exports.termToString(value, color, level + 1)
+                    )) .. tostring(((i < (#entries - 1)) and \\", \\") or \\"\\"))
+                    if ((level * INDENT_WIDTH) + #compact) > MAX_WIDTH then
+                        tryingCompact = false
+                    end
+                    i = i + 1
+                end
+            end
+            if tryingCompact then
+                compact = tostring(compact) .. (tostring((#entries and \\" \\") or \\"\\") .. \\"}\\")
+                if ((level * INDENT_WIDTH) + #compact) <= MAX_WIDTH then
+                    return compact
+                end
+            end
+        end
+        return table.concat(
+            {
+                \\"{\\",
+                tostring(
+                    table.concat(
+                        __TS__ArrayMap(
+                            entries,
+                            function(____, ____bindingPattern0)
+                                local key
+                                key = ____bindingPattern0[1]
+                                local value
+                                value = ____bindingPattern0[2]
+                                local prefix = tostring(key) .. \\": \\"
+                                return (tostring(
+                                    string.rep(
+                                        INDENT,
+                                        math.floor(level + 1)
+                                    )
+                                ) .. tostring(prefix)) .. tostring(
+                                    ____exports.termToString(value, color, level + 1)
+                                )
+                            end
+                        ),
+                        \\",\\\\n\\" or \\",\\"
+                    )
+                ) .. tostring((TRAILING_COMMA and \\",\\") or \\"\\"),
+                tostring(
+                    string.rep(
+                        INDENT,
+                        math.floor(level)
+                    )
+                ) .. \\"}\\"
+            },
+            \\"\\\\n\\" or \\",\\"
+        )
+    end
+    local ____type = userdataType(v)
+    local str = (\\"<\\" .. tostring(____type)) .. \\">\\"
+    return (color and colorize.handle(str)) or str
+end
+____exports.log = function(...)
+    local args = {...}
+    return __TS__ArrayForEach(
+        __TS__StringSplit(
+            table.concat(
+                __TS__ArrayMap(
+                    args,
+                    function(____, v) return ____exports.termToString(v) end
+                ),
+                \\" \\" or \\",\\"
+            ),
+            \\"\\\\n\\"
+        ),
+        function(____, line) return print(line) end
+    )
+end
 return ____exports
 end,
 }

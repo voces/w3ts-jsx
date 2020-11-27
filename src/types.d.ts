@@ -361,10 +361,3 @@ declare namespace JSX {
 		timertext: TimerTextProps;
 	}
 }
-
-// Missing from war3-types
-declare function BlzFrameGetChildrenCount(frame: framehandle): number;
-declare function BlzFrameGetChild(
-	frame: framehandle,
-	index: number,
-): framehandle;
