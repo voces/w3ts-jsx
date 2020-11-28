@@ -54,8 +54,8 @@ type CommonFrameProps = {
 	vertexColor?: number;
 	visible?: boolean;
 	size?: { width?: number; height?: number };
-	position?: Pos[] | null;
-	absPosition?: AbsPos[] | null;
+	position?: Pos | Pos[] | null;
+	absPosition?: AbsPos | AbsPos[] | null;
 	ref?: { current: React.Node } | null;
 };
 
