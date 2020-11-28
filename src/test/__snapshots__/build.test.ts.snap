@@ -2977,7 +2977,8 @@ local function setProp(frame, prop, value, oldValue)
     do
         do
             if val ~= nil then
-                for ____, position in ipairs(val) do
+                local positions = ((((val == \\"parent\\") or (val == \\"clear\\")) or (val.point ~= nil)) and ({val})) or val
+                for ____, position in ipairs(positions) do
                     if position == \\"clear\\" then
                         BlzFrameClearAllPoints(frame)
                     elseif position == \\"parent\\" then
@@ -3019,7 +3020,8 @@ local function setProp(frame, prop, value, oldValue)
     do
         do
             if val ~= nil then
-                for ____, absPosition in ipairs(val) do
+                local positions = (((val == \\"clear\\") or (val.point ~= nil)) and ({val})) or val
+                for ____, absPosition in ipairs(positions) do
                     if absPosition == \\"clear\\" then
                         BlzFrameClearAllPoints(frame)
                     else
