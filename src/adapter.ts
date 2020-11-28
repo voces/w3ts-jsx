@@ -338,8 +338,13 @@ const setProp = (
 			break;
 		}
 		case "position": {
-			if (val != null)
-				for (const position of val as Pos[])
+			if (val != null) {
+				const positions: Pos[] =
+					val === "parent" || val === "clear" || "point" in val
+						? [val as Pos]
+						: (val as Pos[]);
+
+				for (const position of positions)
 					if (position === "clear") BlzFrameClearAllPoints(frame);
 					else if (position === "parent")
 						BlzFrameSetAllPoints(frame, BlzFrameGetParent(frame));
@@ -374,11 +379,17 @@ const setProp = (
 								);
 						}
 					}
+			}
 			break;
 		}
 		case "absPosition": {
-			if (val != null)
-				for (const absPosition of val as AbsPos[])
+			if (val != null) {
+				const positions: AbsPos[] =
+					val === "clear" || "point" in val
+						? [val as AbsPos]
+						: (val as AbsPos[]);
+
+				for (const absPosition of positions)
 					if (absPosition === "clear") BlzFrameClearAllPoints(frame);
 					else
 						BlzFrameSetAbsPoint(
@@ -387,6 +398,7 @@ const setProp = (
 							smartSize(absPosition.x ?? 0),
 							smartSize(absPosition.y ?? 0),
 						);
+			}
 			break;
 		}
 		case "onClick": {
