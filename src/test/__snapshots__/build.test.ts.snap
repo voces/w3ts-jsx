@@ -2431,6 +2431,7 @@ local ____index = require(\\"node_modules.basic-pragma.src.index\\")
 local flushUpdates = ____index.flushUpdates
 local render = ____index.render
 local frameDefaults = {name = \\"AnonymousFrame\\", priority = 0, isSimple = true, typeName = nil, inherits = \\"\\", context = 0, key = nil, alpha = 255, enabled = true, font = {fileName = \\"\\", height = 16, flags = 0}, level = 0, maxLength = 9999, minMaxValue = {min = -999999999, max = 999999999}, model = {modelFile = \\"\\", cameraIndex = 0}, scale = 1, spriteAnimate = {primaryProp = 0, flags = 0}, stepSize = 0, text = \\"\\", textAlignment = {vert = TEXT_JUSTIFY_TOP, horz = TEXT_JUSTIFY_LEFT}, textColor = 16777215, texture = {texFile = \\"\\", flag = 0, blend = true}, tooltip = nil, value = 0, vertexColor = 16777215, visible = true, position = nil, absPosition = nil, size = {width = 0, height = 0}, children = nil, ref = nil, onClick = nil, onMouseEnter = nil, onMouseLeave = nil, onMouseUp = nil, onMouseDown = nil, onMouseWheel = nil, onCheckboxChecked = nil, onCheckboxUnchecked = nil, onEditboxTextChanged = nil, onPopupmenuItemChanged = nil, onDoubleClick = nil, onSpriteAnimUpdate = nil, onSliderChanged = nil, onDialogCancel = nil, onDialogAccept = nil, onEditboxEnter = nil}
+local ____ = frameDefaults
 local function absurd(value)
     error(
         (\\"Got \\" .. tostring(value)) .. \\" when expected nothing\\",
@@ -2721,6 +2722,7 @@ local function setProp(frame, prop, value, oldValue)
     ::____switch27_case_3::
     do
         do
+            local val2 = ((type(val) == \\"string\\") and ({texFile = val})) or val
             BlzFrameSetTexture(
                 frame,
                 (function(____lhs)
@@ -2729,21 +2731,21 @@ local function setProp(frame, prop, value, oldValue)
                     else
                         return ____lhs
                     end
-                end)(val.texFile),
+                end)(val2.texFile),
                 (function(____lhs)
                     if ____lhs == nil then
                         return frameDefaults.texture.flag
                     else
                         return ____lhs
                     end
-                end)(val.flag),
+                end)(val2.flag),
                 (function(____lhs)
                     if ____lhs == nil then
                         return frameDefaults.texture.blend
                     else
                         return ____lhs
                     end
-                end)(val.blend)
+                end)(val2.blend)
             )
             goto ____switch27_end
         end
