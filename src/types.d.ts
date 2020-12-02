@@ -49,7 +49,7 @@ type CommonFrameProps = {
 	text?: string;
 	textAlignment?: { vert: textaligntype; horz: textaligntype };
 	textColor?: number;
-	texture?: { texFile?: string; flag?: number; blend?: boolean };
+	texture?: { texFile?: string; flag?: number; blend?: boolean } | string;
 	value?: number;
 	vertexColor?: number;
 	visible?: boolean;

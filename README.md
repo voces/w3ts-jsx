@@ -10,15 +10,18 @@ Add JSX to your WC3 maps!
 | JSX | ✔️ |
 | Class components | ✔️ |
 | Functional components | ✔️ |
-| Hooks | ✔️ |
+| [Hooks](https://github.com/voces/basic-pragma/issues/1) | 🚧 |
 | [Fragments](https://github.com/voces/w3ts-jsx/issues/2) | ✔️ |
 
 ## Usage
 1. Install the dependency.
+
 ```
 npm install -S w3ts-jsx
 ```
+
 2. Confiure `tsconfig.json`
+
 ```ts
 {
     "compilerOptions": {
@@ -40,7 +43,9 @@ npm install -S w3ts-jsx
     }
 }
 ```
+
 3. Use JSX
+
 ```tsx
 // Import using a relative URL to for path consistency with Typescript-to-Lua
 import * as React from "../node_modules/w3ts-jsx/dist/src/index";
@@ -53,10 +58,8 @@ const App = (): React.Node => (
         onClick={() => print("Button Clicked")}
     >
         <backdrop
-            position={["parent"]}
-            texture={{
-                texFile: "ReplaceableTextures\\CommandButtons\\BTNSelectHeroOn",
-            }}
+            position="parent"
+            texture={"ReplaceableTextures\\CommandButtons\\BTNSelectHeroOn"}
         />
     </button>
 );

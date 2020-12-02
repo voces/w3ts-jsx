@@ -9,7 +9,7 @@ import {
 // https://wc3modding.info/pages/jass-documentation-database/class/functions/file/common.j/
 // https://discordapp.com/channels/178569180625240064/311662737015046144/764384452867784704
 
-const frameDefaults: Required<FrameProps> & { children: null } = {
+const frameDefaults = {
 	// immutable props
 	name: "AnonymousFrame",
 	priority: 0,
@@ -59,7 +59,10 @@ const frameDefaults: Required<FrameProps> & { children: null } = {
 	onDialogCancel: null,
 	onDialogAccept: null,
 	onEditboxEnter: null,
-};
+} as const;
+
+// Just a type assertion; we want const above to handle polymorphic types
+frameDefaults as Required<FrameProps> & { children: null };
 
 const absurd = (value: never) => {
 	throw `Got ${value} when expected nothing`;
@@ -232,11 +235,12 @@ const setProp = (
 			break;
 		}
 		case "texture": {
+			const val2 = typeof val === "string" ? { texFile: val } : val;
 			BlzFrameSetTexture(
 				frame,
-				val.texFile ?? frameDefaults.texture.texFile,
-				val.flag ?? frameDefaults.texture.flag,
-				val.blend ?? frameDefaults.texture.blend,
+				val2.texFile ?? frameDefaults.texture.texFile,
+				val2.flag ?? frameDefaults.texture.flag,
+				val2.blend ?? frameDefaults.texture.blend,
 			);
 			break;
 		}
