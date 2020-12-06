@@ -1,9 +1,9 @@
 {
-	"extends": "../../../../tsconfig.json",
+	"extends": "../../../../../../tsconfig.json",
 	"compilerOptions": {
 		"declaration": false,
 		"noEmit": false,
-		"rootDir": "../.."
+		"rootDir": "../../.."
 	},
 	"tstl": {
 		"noHeader": true,
@@ -20,13 +20,12 @@
 		]
 	},
 	"include": [
-		"../../sample.tsx",
-		"../../../types.d.ts",
-		"../../../../node_modules/basic-pragma"
+		"../../../sample.tsx",
+		"../../../../../types.d.ts",
+		"../../../../../../node_modules/basic-pragma"
 	],
 	"exclude": [
-		"../transformers",
-		"../../../../node_modules/basic-pragma/**/*.test.ts",
-		"../../../../node_modules/basic-pragma/**/test"
+		"../../../../../../node_modules/basic-pragma/**/*.test.ts",
+		"../../../../../../node_modules/basic-pragma/**/test"
 	]
 }
