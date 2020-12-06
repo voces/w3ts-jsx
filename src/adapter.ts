@@ -69,7 +69,6 @@ const absurd = (value: never) => {
 };
 
 const triggerMap = new WeakMap<() => void, trigger>();
-const conditionMap = new WeakMap<() => void, triggercondition>();
 
 const setEventProp = (
 	frame: framehandle,
@@ -91,19 +90,16 @@ const setEventProp = (
 		return;
 	}
 
-	// Create the trigger if ti doesn't exist
+	// Create the trigger if it doesn't exist
 	if (t == null) {
 		t = CreateTrigger();
 		BlzTriggerRegisterFrameEvent(t, frame, event);
-	} else {
-		const condition = conditionMap.get(oldValue!);
-		if (condition) {
-			TriggerRemoveCondition(t, condition);
-			conditionMap.delete(oldValue!);
-		}
 	}
 
-	const condition = TriggerAddCondition(
+	// Otherwise clear old conditions
+	else TriggerClearConditions(t);
+
+	TriggerAddCondition(
 		t,
 		Condition(() => {
 			// Clear focus
@@ -115,7 +111,6 @@ const setEventProp = (
 			return false;
 		}),
 	);
-	conditionMap.set(val, condition);
 	triggerMap.set(val, t);
 };
 

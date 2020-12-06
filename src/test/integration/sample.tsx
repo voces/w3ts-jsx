@@ -1,5 +1,5 @@
 /* eslint-disable react/no-deprecated */
-import * as React from "../index";
+import * as React from "../../index";
 
 const App = (): React.Node => (
 	<>
