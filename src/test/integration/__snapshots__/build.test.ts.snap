@@ -2154,7 +2154,8 @@ local ____arrays = require(\\"node_modules.basic-pragma.src.utils.arrays\\")
 local compact = ____arrays.compact
 local getLength = ____arrays.getLength
 local createTextElement
-function ____exports.createElement(____type, config, children)
+function ____exports.createElement(____type, config, ...)
+    local children = {...}
     local ____ = __TS__ObjectAssign({}, config)
     local key = ____.key
     if key == nil then
