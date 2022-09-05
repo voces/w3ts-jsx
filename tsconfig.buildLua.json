@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.build.json",
+  "tstl": {
+    "buildMode": "library",
+    "noImplicitSelf": true
+  }
+}
