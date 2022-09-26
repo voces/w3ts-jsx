@@ -1,44 +1,18 @@
 {
-	"compilerOptions": {
-		"alwaysStrict": true,
-		"declaration": false,
-		"forceConsistentCasingInFileNames": true,
-		"jsx": "react",
-		"lib": ["ESNext", "DOM"],
-		"module": "commonjs",
-		"moduleResolution": "node",
-		"noImplicitAny": true,
-		"noImplicitThis": true,
-		"outDir": ".",
-		"skipLibCheck": true,
-		"strict": true,
-		"strictNullChecks": true,
-		"target": "ESNext",
-		"baseUrl": ".",
-		"rootDir": ".",
-		"paths": {
-			"*": [
-				"../node_modules/*/src/index",
-				"../node_modules/*/lib/index",
-				"../node_modules/*/index",
-				"../node_modules/*/dist/index",
-				"../node_modules/*"
-			]
-		},
-		"typeRoots": ["lua-types/5.3"],
-		"types": [
-			"@types/jest",
-			"@types/node",
-			"lua-types/5.3",
-			"war3-types/core/compat",
-			"war3-types/core/common",
-			"war3-types/core/blizzard",
-			"war3-types/core/commonai",
-			"war3-types/core/polyfill",
-			"war3-types/special/w3ts"
-		],
-		"noEmit": true
-	},
-	"include": ["src"],
-	"exclude": ["node_modules"]
+  "compilerOptions": {
+    "declaration": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react",
+    "lib": ["ESNext"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "dist/",
+    "strict": true,
+    "target": "ESNext",
+    "types": [
+      "jest",
+      "node",
+      "war3-types-strict/1.32.10"
+    ]
+  }
 }

@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "types": ["war3-types-strict/1.32.10"] },
+  "include": ["src"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/test/**"]
+}
