@@ -6,12 +6,13 @@ import type { AbsPos, FrameProps, Pos, RelativeFrame } from "./types";
 // https://discordapp.com/channels/178569180625240064/311662737015046144/764384452867784704
 
 declare interface Console {
-  // @ts-ignore
+  // deno-lint-ignore no-explicit-any
   log: (...args: any[]) => void;
-  // @ts-ignore
+  // deno-lint-ignore no-explicit-any
   error: (...args: any[]) => void;
 }
 
+// deno-lint-ignore no-var
 declare var console: Console;
 
 const frameDefaults = {
@@ -221,9 +222,9 @@ const setProp = (
   value?: FrameProps[keyof FrameProps],
   oldValue?: FrameProps[keyof FrameProps],
 ) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // deno-lint-ignore no-explicit-any
   const val = value ?? (frameDefaults[prop] as any);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // deno-lint-ignore no-explicit-any
   const _oldValue = oldValue as any;
   switch (prop) {
     case "text": {

@@ -65,6 +65,7 @@ type SimpleFrameProps = CommonFrameProps;
 
 // Props shared by all frames that are not simple frames
 type ComplexFrameProps = CommonFrameProps & {
+  // deno-lint-ignore no-explicit-any
   tooltip?: VNode<any> | null;
 };
 
@@ -249,6 +250,7 @@ export type ScrollbarProps = ComplexFrameProps & {
 };
 
 export type SimpleButtonProps = SimpleFrameProps & {
+  // deno-lint-ignore no-explicit-any
   tooltip?: VNode<any> | null;
   onClick?: Handler;
 };

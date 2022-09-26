@@ -25,7 +25,7 @@
     "jest-environment-jsdom": "^29.0.3",
     "ts-jest": "^28.0.8",
     "typescript-to-lua": "^1.9.0",
-    "w3api": "^2.4.0",
+    "w3api": "^2.4.1",
     "war3-types-strict": "github:Z-Machine/war3-types-strict"
   },
   "files": [
