@@ -20,11 +20,12 @@
   },
   "devDependencies": {
     "@types/jest": "^28.1.7",
-    "basic-pragma": "^4.4.1",
+    "basic-pragma": "^4.4.2",
     "jest": "^28.1.3",
+    "jest-environment-jsdom": "^29.0.3",
     "ts-jest": "^28.0.8",
     "typescript-to-lua": "^1.9.0",
-    "w3api": "^2.2.0",
+    "w3api": "^2.4.0",
     "war3-types-strict": "github:Z-Machine/war3-types-strict"
   },
   "files": [

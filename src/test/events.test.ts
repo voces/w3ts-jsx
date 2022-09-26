@@ -1,7 +1,5 @@
 import { adapter } from "../adapter";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const root = {} as any;
+import { initUI } from "w3api/dist/ui/init";
 
 const triggerAddConditionMock = jest.fn();
 globalThis.TriggerAddCondition = triggerAddConditionMock;
@@ -16,12 +14,17 @@ beforeEach(() => {
   triggerAddConditionMock.mockClear();
   blzTriggerRegisterFrameEventMock.mockClear();
   triggerClearConditionsMock.mockClear();
+  initUI();
 });
 
-it.skip("clears conditions when changing callback", () => {
+it("clears conditions when changing callback", () => {
   let props = {};
   let nextProps = {};
-  const frame = adapter.createFrame("container", root, props);
+  const frame = adapter.createFrame(
+    "container",
+    BlzCreateFrame("foo", undefined as unknown as framehandle, 0, 0),
+    props,
+  );
 
   expect(triggerAddConditionMock).toHaveBeenCalledTimes(0);
 

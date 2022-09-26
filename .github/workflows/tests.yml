@@ -10,8 +10,8 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: '18.x'
-    - run: npm install
+    - run: npm ci
     - run: npm run build
-    # - run: npm test
+    - run: npm test
     - uses: denoland/setup-deno@v1
     - run: npm run test-lint

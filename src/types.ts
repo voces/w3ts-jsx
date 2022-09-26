@@ -53,7 +53,7 @@ type CommonFrameProps = {
   value?: number;
   vertexColor?: number;
   visible?: boolean;
-  size?: { width?: number; height?: number };
+  size?: { width?: number; height?: number } | number;
   position?: Pos | Pos[] | null;
   absPosition?: AbsPos | AbsPos[] | null;
   ref?: { current: framehandle } | null;
@@ -69,7 +69,7 @@ type ComplexFrameProps = CommonFrameProps & {
 };
 
 export type FrameProps = ComplexFrameProps & {
-  model?: { modelFile?: string; cameraIndex?: number };
+  model?: { modelFile?: string; cameraIndex?: number } | string;
   spriteAnimate?: { primaryProp: number; flags: number };
   stepSize?: number;
   onClick?: Handler;
@@ -221,7 +221,7 @@ export type MenuProps = ComplexFrameProps & {
 };
 
 export type ModelProps = ComplexFrameProps & {
-  model?: { modelFile?: string; cameraIndex?: number };
+  model?: { modelFile?: string; cameraIndex?: number } | string;
   onMouseEnter?: Handler;
   onMouseLeave?: Handler;
   onMouseUp?: Handler;
@@ -326,6 +326,10 @@ export type TimerTextProps = ComplexFrameProps & {
   onDoubleClick?: Handler;
 };
 
+export type StatusBarProps = ComplexFrameProps & {
+  model: { modelFile?: string; cameraIndex?: number } | string;
+};
+
 declare global {
   namespace JSX {
     interface IntrinsicElements {
@@ -361,6 +365,7 @@ declare global {
       textarea: TextAreaProps;
       textbutton: TextButtonProps;
       timertext: TimerTextProps;
+      statusbar: StatusBarProps;
     }
   }
 }

@@ -1,5 +1,6 @@
-import { Adapter, flushUpdates, render } from "basic-pragma";
-import { AbsPos, FrameProps, Pos, RelativeFrame } from "./types";
+import { flushUpdates, render } from "basic-pragma";
+import type { Adapter } from "basic-pragma";
+import type { AbsPos, FrameProps, Pos, RelativeFrame } from "./types";
 
 // https://wc3modding.info/pages/jass-documentation-database/class/functions/file/common.j/
 // https://discordapp.com/channels/178569180625240064/311662737015046144/764384452867784704
@@ -151,6 +152,7 @@ const resolveRelative = (
       if (index > 0) return BlzFrameGetChild(parent, index - 1);
       return null;
     }
+    // TODO: this behavior is error prone as it requires a re-render since children might not exist yet
     case "children":
       if (firstChildRelativePoints.includes(relativePoint)) {
         return BlzFrameGetChild(frame, 0);
@@ -162,6 +164,7 @@ const resolveRelative = (
         );
       }
       throw `When using relative=children, expected relativePoint to be in ${firstChildRelativePoints} or ${lastChildRelativePoints}`;
+    // TODO: this behavior is error prone as it requires a re-render since children might not exist yet
     case "children-reverse":
       if (lastChildRelativePoints.includes(relativePoint)) {
         return BlzFrameGetChild(frame, 0);
@@ -246,10 +249,16 @@ const setProp = (
       break;
     }
     case "model": {
+      const modelVal = typeof val === "string"
+        ? {
+          modelFile: val,
+          cameraIndex: 0,
+        }
+        : val;
       BlzFrameSetModel(
         frame,
-        val.modelFile ?? frameDefaults.model.modelFile,
-        val.cameraIndex ?? frameDefaults.model.cameraIndex,
+        modelVal.modelFile ?? frameDefaults.model.modelFile,
+        modelVal.cameraIndex ?? frameDefaults.model.cameraIndex,
       );
       break;
     }
@@ -278,10 +287,11 @@ const setProp = (
       break;
     }
     case "size": {
+      const size = typeof val === "number" ? { width: val, height: val } : val;
       BlzFrameSetSize(
         frame,
-        smartSize(val.width ?? frameDefaults.size.width),
-        smartSize(val.height ?? frameDefaults.size.height),
+        smartSize(size.width ?? frameDefaults.size.width),
+        smartSize(size.height ?? frameDefaults.size.height),
       );
       break;
     }
@@ -552,7 +562,7 @@ export const adapter: Adapter<
     parentFrame: framehandle | undefined,
     props: JSX.IntrinsicElements[T],
   ) => {
-    if (!parentFrame) throw `expected parent frame for ${jsxType}`;
+    if (!parentFrame) throw new Error(`expected parent frame for ${jsxType}`);
 
     const {
       name = frameDefaults.name,
@@ -627,7 +637,11 @@ export const adapter: Adapter<
 
     // Add new props
     for (prop in nextProps) {
-      if (nextProps[prop] !== prevProps[prop]) {
+      if (
+        nextProps[prop] !== prevProps[prop] ||
+        // Hack to make relative positioning to work with variables ("children", "previous", etc)
+        prop === "position" || prop === "absPosition"
+      ) {
         try {
           setProp(frame, prop, nextProps[prop], prevProps[prop]);
         } catch (err) {
