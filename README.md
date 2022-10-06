@@ -55,7 +55,7 @@ export const App = () => {
     <button
       inherits="ScoreScreenTabButtonTemplate"
       absPosition={{ point: FRAMEPOINT_CENTER, x: 0.4, y: 0.3 }}
-      size={{ width: 0.05, height: 0.05 }}
+      size={{ width: 0.1, height: 0.04 }}
       onClick={() => print("Button Clicked")}
     >
       <backdrop
