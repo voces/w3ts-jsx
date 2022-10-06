@@ -1,6 +1,6 @@
 {
   "name": "w3ts-jsx",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "JSX for Warcraft III maps",
   "author": "verit",
   "license": "ISC",
@@ -9,18 +9,19 @@
   "scripts": {
     "build-js": "tsc --project tsconfig.build.json",
     "build-lua": "tstl --project tsconfig.buildLua.json",
-    "build": "rm -rf dist & npm run build-js & npm run build-lua",
-    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && npm run build-js & npm run build-lua",
+    "prepublishOnly": "npm run test-lint & npm run build & npm test",
     "test-debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "test-lint": "deno lint . --ignore=node_modules,dist,src/test/jsIntegration/dist",
     "test": "jest"
   },
   "peerDependencies": {
-    "basic-pragma": "^4.4.1"
+    "basic-pragma": "^4.4.3"
   },
   "devDependencies": {
     "@types/jest": "^28.1.7",
-    "basic-pragma": "^4.4.2",
+    "basic-pragma": "^4.4.3",
     "jest": "^28.1.3",
     "jest-environment-jsdom": "^29.0.3",
     "ts-jest": "^28.0.8",

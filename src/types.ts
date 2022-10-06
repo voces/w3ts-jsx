@@ -39,6 +39,7 @@ type CommonFrameProps = {
   context?: number;
   key?: string | number | null;
   // mutable props
+  /** 0-255 */
   alpha?: number;
   enabled?: boolean;
   font?: { fileName?: string; height?: number; flags?: number };
@@ -56,7 +57,7 @@ type CommonFrameProps = {
   size?: { width?: number; height?: number } | number;
   position?: Pos | Pos[] | null;
   absPosition?: AbsPos | AbsPos[] | null;
-  ref?: { current: framehandle } | null;
+  ref?: { current: framehandle | null } | null;
   children?: Children;
 };
 
